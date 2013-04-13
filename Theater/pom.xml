@@ -8,6 +8,7 @@
   <name>Theater parent</name>
   <modules>
     <module>theater-api</module>
+    <module>theater-core</module>
   </modules>
   <description>The theater framework provides a scalable and fault tolerant actor framework with durable messaging and actors.
 </description>
