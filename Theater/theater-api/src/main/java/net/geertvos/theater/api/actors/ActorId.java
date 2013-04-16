@@ -1,8 +1,10 @@
 package net.geertvos.theater.api.actors;
 
+import java.util.UUID;
+
 public interface ActorId {
 
-	int getId();
+	UUID getId();
 	
 	String getCluster();
 	

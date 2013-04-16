@@ -5,17 +5,29 @@
     <artifactId>theater-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>net.geertvos.theater</groupId>
-  <artifactId>theater-core</artifactId>
-  <name>theater-core</name>
-  <dependencies>
+  <groupId>net.geertvos.theater.demo</groupId>
+  <artifactId>theater-demo</artifactId>
+  <name>theater-demo</name>
+  <description>Demo application for the Theater framework</description>
+  
+    <dependencies>
   	<dependency>
   		<groupId>net.geertvos.theater</groupId>
   		<artifactId>theater-api</artifactId>
   		<version>${project.version}</version>
   	</dependency>
   	<dependency>
+  		<groupId>net.geertvos.theater</groupId>
+  		<artifactId>theater-core</artifactId>
+  		<version>${project.version}</version>
+  	</dependency>
+  	<dependency>
   		<artifactId>gossip-api</artifactId>
+		<groupId>net.geertvos</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  	<dependency>
+  		<artifactId>gossip-core</artifactId>
 		<groupId>net.geertvos</groupId>
 		<version>0.0.1-SNAPSHOT</version>
   	</dependency>
