@@ -28,9 +28,11 @@ public class LocalPartition implements Partition {
 				actor = factory.createActor(message);
 			}
 			if(actor != null) {
-				//TODO probably we want to execute this on an actorexecutor
+				store.writeActor(actor);
 				actor.handleMessage(message);
 			}
+		} else {
+			throw new IllegalStateException("Partition is not yet initialized.");
 		}
 	}
 

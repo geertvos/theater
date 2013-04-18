@@ -3,20 +3,23 @@ package net.geertvos.theater.core.partitioning;
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.partitioning.Partition;
+import net.geertvos.theater.core.networking.PartitionClient;
 
 public class RemotePartition implements Partition {
 
 	private final ClusterMember clusterMember;
 	private final int id;
-
+	private final int port;
+	private PartitionClient client;
+	
 	public RemotePartition(int id, ClusterMember clusterMember) {
 		this.id = id;
 		this.clusterMember = clusterMember;
+		this.port = Integer.parseInt(clusterMember.getMetaData("partitionServer.port"));
 	}
 	
 	public void handleMessage(Message message) {
-		// TODO Auto-generated method stub
-		
+		client.sendMessage(message);
 	}
 
 	public int getId() {
@@ -24,13 +27,11 @@ public class RemotePartition implements Partition {
 	}
 
 	public void onInit() {
-		// TODO Auto-generated method stub
-		
+		client = new PartitionClient(clusterMember.getIp(), port);
 	}
 
 	public void onDestroy() {
-		// TODO Auto-generated method stub
-		
+		client.disconnect();
 	}
 	
 	public ClusterMember getClusterMember() {

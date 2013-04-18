@@ -11,14 +11,17 @@ import net.geertvos.gossip.api.cluster.Cluster;
 import net.geertvos.gossip.api.cluster.ClusterEventListener;
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.ActorId;
+import net.geertvos.theater.api.hashing.ConsistentHashFunction;
 import net.geertvos.theater.api.partitioning.Partition;
 import net.geertvos.theater.api.partitioning.PartitionManager;
+import net.geertvos.theater.core.hashing.FakeHashFunction;
 
 import org.apache.log4j.Logger;
 
 public class ClusteredPartitionManager implements PartitionManager, ClusterEventListener {
 
 	private Logger logger = Logger.getLogger(ClusteredPartitionManager.class);
+	
 	private final Cluster cluster;
 	private final LocalPartitionFactory localPartitionFactory;
 	private final RemotePartitionFactory remotePartitionFactory;
@@ -27,8 +30,9 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	private final Lock readLock = lock.readLock();
 	private final Lock writeLock = lock.writeLock();
 	
-	private int numberOfPartitions = 512;
+	private final int numberOfPartitions;
 	private final List<Partition> partitions;
+	private ConsistentHashFunction hashFunction =  new FakeHashFunction();
 	
 	public ClusteredPartitionManager(int numberOfPartitions, Cluster cluster, LocalPartitionFactory localPartitionFactory, RemotePartitionFactory remotePartitionFactory) {
 		this.numberOfPartitions = numberOfPartitions;
@@ -38,7 +42,9 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		this.localPartitionFactory = localPartitionFactory;
 		this.remotePartitionFactory = remotePartitionFactory;
 		for(int i=0;i<numberOfPartitions;i++) {
-			partitions.add(localPartitionFactory.createPartition(i));
+			Partition p = localPartitionFactory.createPartition(i);
+			partitions.add(p);
+			p.onInit();
 		}
 	}
 
@@ -75,10 +81,6 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	}
 
 	public void onClusterStabilized(List<ClusterMember> members) {
-		logger.info("New cluster members:");
-		for(ClusterMember member : members) {
-			logger.info("member: "+member.getId());
-		}
 		try {
 			writeLock.lock();
 			ClusterMember me = cluster.getLocalMember();
@@ -100,7 +102,6 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	private void createRemotePartition(int i, ClusterMember member) {
 		Partition current = partitions.get(i);
 		if(current instanceof RemotePartition && ((RemotePartition)current).getClusterMember().getId().equals(member.getId())) {
-			//Partition stays
 			logger.info("Partition "+i+" stays a remote partition on cluster member "+member.getId());
 			return;
 		}
@@ -115,7 +116,6 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	private void createLocalPartition(int i) {
 		Partition current = partitions.get(i);
 		if(current instanceof LocalPartition) {
-			//Partition stays
 			logger.info("Partition "+i+" stays at local cluster member");
 			return;
 		}
@@ -125,22 +125,24 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		partitions.remove(i);
 		partitions.add(i, newPartition);
 		newPartition.onInit();
-		
 	}
 
 	private int hash(int number) {
-		return number;
+		return hashFunction.hash(""+number);
 	}
 	
 	private int hash(UUID id) {
-		long idLong = id.timestamp();
-		return (int) Math.round(idLong * 31 / 3.31);
+		return hashFunction.hash(id.toString());
 	}
 
 
 	public void onClusterDestabilized() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public void setHashFunction(ConsistentHashFunction hashFunction) {
+		this.hashFunction = hashFunction;
 	}
 
 }

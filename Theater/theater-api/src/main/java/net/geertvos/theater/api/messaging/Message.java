@@ -7,4 +7,9 @@ public interface Message {
 	ActorId getTo();
 	
 	ActorId getFrom();
+	
+	void setParameter(String name, String value);
+	
+	String getParameter(String name);
+	
 }
