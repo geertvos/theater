@@ -1,11 +1,15 @@
 package net.geertvos.theater.core.partitioning;
 
+import org.testng.log4testng.Logger;
+
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.partitioning.Partition;
 import net.geertvos.theater.core.networking.PartitionClient;
 
 public class RemotePartition implements Partition {
+
+	private Logger log = Logger.getLogger(RemotePartition.class);
 
 	private final ClusterMember clusterMember;
 	private final int id;
@@ -19,6 +23,7 @@ public class RemotePartition implements Partition {
 	}
 	
 	public void handleMessage(Message message) {
+		log.debug("Sending message "+message+" to remote partition "+id);
 		client.sendMessage(message);
 	}
 

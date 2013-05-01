@@ -6,10 +6,6 @@ import java.util.Map;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.messaging.Message;
 
-import org.codehaus.jackson.annotate.JsonAnyGetter;
-import org.codehaus.jackson.annotate.JsonAnySetter;
-import org.codehaus.jackson.annotate.JsonTypeInfo;
-
 public class PartitionMessage implements Message {
 
 	private int type;

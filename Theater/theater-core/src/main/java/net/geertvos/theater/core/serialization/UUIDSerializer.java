@@ -17,8 +17,8 @@ public class UUIDSerializer extends Serializer<UUID> {
 
 	@Override
 	public UUID read(Kryo kryo, Input input, Class<UUID> type) {
-		long least = input.readLong();
 		long most = input.readLong();
+		long least = input.readLong();
 		return new UUID(most,least);
 	}
 

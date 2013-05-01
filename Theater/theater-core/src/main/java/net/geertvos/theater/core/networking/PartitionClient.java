@@ -1,6 +1,5 @@
 package net.geertvos.theater.core.networking;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
@@ -33,6 +32,7 @@ public class PartitionClient {
 	}
 	
 	public void sendMessage(final Message message) {
+		log.debug("Trying to send remote message: "+message.toString());
 		if(!channelFuture.getChannel().isConnected()) {
 			channelFuture = clientBootstrap.connect(new InetSocketAddress(host, port));
 		}
@@ -40,6 +40,7 @@ public class PartitionClient {
 			
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(future.isSuccess()) {
+					log.debug("Writing message: "+message.toString());
 					future.getChannel().write(message);
 				} else {
 					log.error("Unable to send message.", future.getCause());

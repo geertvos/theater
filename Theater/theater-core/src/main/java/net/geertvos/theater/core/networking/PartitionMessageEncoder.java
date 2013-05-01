@@ -1,11 +1,11 @@
 package net.geertvos.theater.core.networking;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import net.geertvos.theater.core.actor.ActorIdImpl;
 import net.geertvos.theater.core.serialization.UUIDSerializer;
 
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
@@ -31,11 +31,9 @@ public class PartitionMessageEncoder extends OneToOneEncoder {
 	@Override
 	public Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
 		PartitionMessage pm = (PartitionMessage)msg;
-        Output out = new Output(4096);
+        Output out = new Output(4096, Integer.MAX_VALUE);
         kryo.writeObject(out, pm);
-        ByteBuffer buffer = ByteBuffer.wrap(out.getBuffer());
-//        buffer.flip();
-        return buffer;
+        return ChannelBuffers.wrappedBuffer(out.getBuffer());
 	}
 
 }
