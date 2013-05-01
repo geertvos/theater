@@ -12,6 +12,7 @@
 		<commons-codec.version>1.7</commons-codec.version>
 		<netty.version>3.6.3.Final</netty.version>
 		<jackson.version>1.9.12</jackson.version>
+		<kryo.version>2.21</kryo.version>
   </properties>
   
   <modules>

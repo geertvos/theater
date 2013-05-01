@@ -8,12 +8,15 @@ import net.geertvos.theater.api.actors.ActorId;
 
 public class ActorIdImpl implements ActorId {
 
-	private final UUID id;
-	private final String cluster;
+	private UUID id;
+	private String cluster;
 
 	public ActorIdImpl(@JsonProperty("id")UUID id, @JsonProperty("cluster") String cluster) {
 		this.id = id;
 		this.cluster = cluster;
+	}
+	
+	public ActorIdImpl() {
 	}
 	
 	public UUID getId() {
@@ -57,6 +60,14 @@ public class ActorIdImpl implements ActorId {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public void setCluster(String cluster) {
+		this.cluster = cluster;
 	}
 	
 	

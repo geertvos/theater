@@ -27,7 +27,7 @@ public class RemotePartition implements Partition {
 	}
 
 	public void onInit() {
-		client = new PartitionClient(clusterMember.getIp(), port);
+		client = new PartitionClient(clusterMember.getHost(), port);
 	}
 
 	public void onDestroy() {

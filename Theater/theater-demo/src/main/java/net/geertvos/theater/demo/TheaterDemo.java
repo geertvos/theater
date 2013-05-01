@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.gossip.core.GossipCluster;
@@ -26,7 +27,6 @@ import net.geertvos.theater.core.partitioning.RemotePartition;
 import net.geertvos.theater.core.partitioning.RemotePartitionFactory;
 
 import org.apache.log4j.BasicConfigurator;
-import org.testng.log4testng.Logger;
 
 public class TheaterDemo {
 
@@ -95,7 +95,7 @@ public class TheaterDemo {
 		partitionServer.start();
 		
 		final PartitionMessageSender sender = new PartitionMessageSender(partitionManager);
-		
+		final AtomicLong seq = new AtomicLong();
 		final ActorId to = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 		final ActorId from = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 
@@ -104,11 +104,11 @@ public class TheaterDemo {
 			
 			@Override
 			public void run() {
-				final PartitionMessage message = new PartitionMessage(from, to);
+				final PartitionMessage message = new PartitionMessage(1, seq.incrementAndGet(), from, to);
 				message.setParameter("test", "value");
 				sender.sendMessage(message);
 			}
-		}, 6000, 1000);
+		}, 600, 1000);
 
 	}
 	

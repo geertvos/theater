@@ -3,6 +3,7 @@ package net.geertvos.theater.core.partitioning;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,6 +35,8 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	private final List<Partition> partitions;
 	private ConsistentHashFunction hashFunction =  new FakeHashFunction();
 	
+	private CountDownLatch initLatch = new CountDownLatch(1);
+	
 	public ClusteredPartitionManager(int numberOfPartitions, Cluster cluster, LocalPartitionFactory localPartitionFactory, RemotePartitionFactory remotePartitionFactory) {
 		this.numberOfPartitions = numberOfPartitions;
 		this.cluster = cluster;
@@ -50,10 +53,14 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 
 	public Partition findPartitionForActor(ActorId actor) {
 		try {
+			initLatch.await();
 			int hash = hash(actor.getId());
 			int partition = hash % numberOfPartitions;
 			readLock.lock();
 			return partitions.get(partition);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			throw new IllegalStateException("PartitionManager not initialized properly.");
 		} finally {
 			readLock.unlock();
 		}
@@ -95,6 +102,7 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 				}
 			}
 		} finally {
+			initLatch.countDown();
 			writeLock.unlock();
 		}
 	}

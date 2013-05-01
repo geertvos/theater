@@ -1,5 +1,6 @@
 package net.geertvos.theater.core.networking;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
@@ -17,23 +18,31 @@ public class PartitionClient {
 	
 	private ClientBootstrap clientBootstrap;
 	private ChannelFuture channelFuture;
+
+	private String host;
+	private int port;
 	
 	//TODO add reconnect logic
 	
 	public PartitionClient(String host, int port) {
+		this.port = port;
+		this.host = host;
 		clientBootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		clientBootstrap.setPipelineFactory(new PartitionClientPipelineFactory());
 		channelFuture = clientBootstrap.connect(new InetSocketAddress(host, port));
 	}
 	
 	public void sendMessage(final Message message) {
+		if(!channelFuture.getChannel().isConnected()) {
+			channelFuture = clientBootstrap.connect(new InetSocketAddress(host, port));
+		}
 		channelFuture.addListener(new ChannelFutureListener() {
 			
-			public void operationComplete(ChannelFuture arg0) throws Exception {
-				if(arg0.isSuccess()) {
-					arg0.getChannel().write(message);
+			public void operationComplete(ChannelFuture future) throws Exception {
+				if(future.isSuccess()) {
+					future.getChannel().write(message);
 				} else {
-					log.error("Unable to send message.", arg0.getCause());
+					log.error("Unable to send message.", future.getCause());
 				}
 			}
 		});

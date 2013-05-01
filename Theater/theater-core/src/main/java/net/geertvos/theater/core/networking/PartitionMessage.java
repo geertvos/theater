@@ -12,13 +12,17 @@ import org.codehaus.jackson.annotate.JsonTypeInfo;
 
 public class PartitionMessage implements Message {
 
+	private int type;
+	private long sequenceNumber;
 	private ActorId to;
 	private ActorId from;
 	private Map<String, String> parameters = new HashMap<String, String>();
 
-	public PartitionMessage(ActorId from, ActorId to) {
+	public PartitionMessage(int type, long sequenceNumber, ActorId from, ActorId to) {
+		this.sequenceNumber = sequenceNumber;
 		this.from = from;
 		this.to = to;
+		this.type = type;
 	}
 
 	public PartitionMessage() {
@@ -32,22 +36,26 @@ public class PartitionMessage implements Message {
 		this.from = from;
 	}
 	
-	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 	public ActorId getTo() {
 		return to;
 	}
 
-	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 	public ActorId getFrom() {
 		return from;
 	}
+	
+	public void setType(int type) {
+		this.type = type;
+	}
+	
+	public int getType() {
+		return type;
+	}
 
-	@JsonAnyGetter
 	public Map<String, String> getAllParameters() {
 		return parameters;
 	}
 
-	@JsonAnySetter
 	public void setParameter(String name, String value) {
 		parameters.put(name, name);
 	}
@@ -56,9 +64,17 @@ public class PartitionMessage implements Message {
 		return parameters.get(name);
 	}
 
+	public void setSequenceNumber(long number) {
+		this.sequenceNumber = number;
+	}
+	
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Message: [").append(from.getId()).append("] -> [").append(to.getId()).append("] : ").append(parameters);
+		builder.append("Message ").append(sequenceNumber).append(" : [").append(from.getId()).append("] -> [").append(to.getId()).append("] : ").append(parameters);
 		return builder.toString();
+	}
+
+	public long getSequenceNumber() {
+		return sequenceNumber;
 	}
 }
