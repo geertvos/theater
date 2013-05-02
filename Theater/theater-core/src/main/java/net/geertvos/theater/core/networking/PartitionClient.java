@@ -21,8 +21,6 @@ public class PartitionClient {
 	private String host;
 	private int port;
 	
-	//TODO add reconnect logic
-	
 	public PartitionClient(String host, int port) {
 		this.port = port;
 		this.host = host;

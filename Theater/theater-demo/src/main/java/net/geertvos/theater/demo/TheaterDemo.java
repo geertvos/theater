@@ -14,9 +14,11 @@ import net.geertvos.gossip.core.network.GossipServer;
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.actorstore.ActorStore;
+import net.geertvos.theater.api.durability.PartitionMessageLog;
 import net.geertvos.theater.api.factory.ActorFactory;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.core.actor.ActorIdImpl;
+import net.geertvos.theater.core.durability.NoopPartitionMessageLog;
 import net.geertvos.theater.core.messaging.PartitionMessageSender;
 import net.geertvos.theater.core.networking.PartitionMessage;
 import net.geertvos.theater.core.networking.PartitionServer;
@@ -87,7 +89,8 @@ public class TheaterDemo {
 		RemotePartitionFactory remote = new RemotePartitionFactory() {
 
 			public RemotePartition createPartition(int id, ClusterMember host) {
-				return new RemotePartition(id, host);
+				PartitionMessageLog log = new NoopPartitionMessageLog();
+				return new RemotePartition(id, host, log);
 			}
 		};
 		ClusteredPartitionManager partitionManager = new ClusteredPartitionManager(8, cluster, local, remote);
