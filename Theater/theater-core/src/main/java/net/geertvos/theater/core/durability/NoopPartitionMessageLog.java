@@ -3,10 +3,10 @@ package net.geertvos.theater.core.durability;
 import java.util.Collections;
 import java.util.List;
 
-import net.geertvos.theater.api.durability.PartitionMessageLog;
+import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
 
-public class NoopPartitionMessageLog implements PartitionMessageLog {
+public class NoopPartitionMessageLog implements MessageLog {
 
 	public void logMessage(Message message) {
 	}

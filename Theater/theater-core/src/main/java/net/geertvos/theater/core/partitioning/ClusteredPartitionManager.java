@@ -67,27 +67,23 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	}
 	
 
-	public void onNewActiveMember(ClusterMember member) {
-		// TODO Auto-generated method stub
-		
+	public void onNewActiveMember(ClusterMember member, List<ClusterMember> members) {
+		updatePartitions(members);
 	}
 
-	public void onNewInactiveMember(ClusterMember member) {
-		// TODO Auto-generated method stub
-		
+	public void onNewInactiveMember(ClusterMember member, List<ClusterMember> members) {
+		updatePartitions(members);
 	}
 
-	public void onMemberActivated(ClusterMember member) {
-		// TODO Auto-generated method stub
-		
+	public void onMemberActivated(ClusterMember member, List<ClusterMember> members) {
+		updatePartitions(members);
 	}
 
-	public void onMemberDeactivated(ClusterMember member) {
-		// TODO Auto-generated method stub
-		
+	public void onMemberDeactivated(ClusterMember member, List<ClusterMember> members) {
+		updatePartitions(members);
 	}
 
-	public void onClusterStabilized(List<ClusterMember> members) {
+	private void updatePartitions(List<ClusterMember> members) {
 		try {
 			writeLock.lock();
 			ClusterMember me = cluster.getLocalMember();
@@ -107,6 +103,18 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		}
 	}
 	
+	public void onClusterStabilized(List<ClusterMember> members) {
+		try {
+			readLock.lock();
+			for(Partition p : partitions) {
+				p.onInit();
+			}
+		} finally {
+			readLock.unlock();
+		}
+		
+	}
+	
 	private void createRemotePartition(int i, ClusterMember member) {
 		Partition current = partitions.get(i);
 		if(current instanceof RemotePartition && ((RemotePartition)current).getClusterMember().getId().equals(member.getId())) {
@@ -118,7 +126,6 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		RemotePartition newPartition = remotePartitionFactory.createPartition(i, member);
 		partitions.remove(i);
 		partitions.add(i, newPartition);
-		newPartition.onInit();
 	}
 
 	private void createLocalPartition(int i) {
@@ -132,7 +139,6 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		LocalPartition newPartition = localPartitionFactory.createPartition(i);
 		partitions.remove(i);
 		partitions.add(i, newPartition);
-		newPartition.onInit();
 	}
 
 	private int hash(int number) {
@@ -144,8 +150,7 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	}
 
 
-	public void onClusterDestabilized() {
-		// TODO Auto-generated method stub
+	public void onClusterDestabilized(List<ClusterMember> members) {
 		
 	}
 

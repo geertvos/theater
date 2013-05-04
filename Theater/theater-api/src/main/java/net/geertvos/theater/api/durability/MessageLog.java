@@ -4,7 +4,7 @@ import java.util.List;
 
 import net.geertvos.theater.api.messaging.Message;
 
-public interface PartitionMessageLog {
+public interface MessageLog {
 
 	void logMessage(Message message);
 	

@@ -14,7 +14,7 @@ import net.geertvos.gossip.core.network.GossipServer;
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.actorstore.ActorStore;
-import net.geertvos.theater.api.durability.PartitionMessageLog;
+import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.factory.ActorFactory;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.core.actor.ActorIdImpl;
@@ -54,16 +54,7 @@ public class TheaterDemo {
 			
 			public Actor createActor(final Message input) {
 					System.out.println("New actor created: "+input.getTo().getId());
-				return new Actor() {
-					
-					public void handleMessage(Message message) {
-						System.out.println("Received message: "+message);
-					}
-					
-					public ActorId getId() {
-						return input.getTo();
-					}
-				};
+					return new TheaterActor(input.getTo());
 			}
 		};
 
@@ -89,7 +80,7 @@ public class TheaterDemo {
 		RemotePartitionFactory remote = new RemotePartitionFactory() {
 
 			public RemotePartition createPartition(int id, ClusterMember host) {
-				PartitionMessageLog log = new NoopPartitionMessageLog();
+				MessageLog log = new NoopPartitionMessageLog();
 				return new RemotePartition(id, host, log);
 			}
 		};

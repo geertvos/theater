@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import me.prettyprint.cassandra.serializers.BytesArraySerializer;
-import me.prettyprint.cassandra.serializers.LongSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.cassandra.service.ThriftKsDef;
 import me.prettyprint.cassandra.service.template.ColumnFamilyTemplate;
@@ -15,12 +14,12 @@ import me.prettyprint.hector.api.ddl.ColumnFamilyDefinition;
 import me.prettyprint.hector.api.ddl.ComparatorType;
 import me.prettyprint.hector.api.ddl.KeyspaceDefinition;
 import me.prettyprint.hector.api.factory.HFactory;
-import net.geertvos.theater.api.durability.PartitionMessageLog;
+import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
 
-public class CassandraPartitionMessageLog implements PartitionMessageLog {
+public class CassandraMessageLog implements MessageLog {
 
-	public CassandraPartitionMessageLog(Keyspace keyspace) {
+	public CassandraMessageLog(Keyspace keyspace) {
 		Cluster cluster = HFactory.getOrCreateCluster("test-cluster", "localhost:9160");
 		ColumnFamilyDefinition cfDef = HFactory.createColumnFamilyDefinition("MyKeyspace", "ColumnFamilyName", ComparatorType.BYTESTYPE);
 

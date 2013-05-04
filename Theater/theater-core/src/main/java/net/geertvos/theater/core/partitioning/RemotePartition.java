@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.testng.log4testng.Logger;
 
 import net.geertvos.gossip.api.cluster.ClusterMember;
-import net.geertvos.theater.api.durability.PartitionMessageLog;
+import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.partitioning.Partition;
 import net.geertvos.theater.core.durability.NoopPartitionMessageLog;
@@ -19,10 +19,10 @@ public class RemotePartition implements Partition {
 	private final int id;
 	private final int port;
 	private PartitionClient client;
-	private final PartitionMessageLog messageLog;
+	private final MessageLog messageLog;
 	private AtomicBoolean operational = new AtomicBoolean(false);
 	
-	public RemotePartition(int id, ClusterMember clusterMember, PartitionMessageLog messageLog) {
+	public RemotePartition(int id, ClusterMember clusterMember, MessageLog messageLog) {
 		this.id = id;
 		this.clusterMember = clusterMember;
 		this.port = Integer.parseInt(clusterMember.getMetaData("partitionServer.port"));
