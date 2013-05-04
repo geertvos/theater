@@ -26,7 +26,7 @@ public class PartitionMessageEncoderTest {
 		
 		ActorId from = new ActorIdImpl(UUID.randomUUID(), "this");
 		ActorId to = new ActorIdImpl(UUID.randomUUID(), "this");
-		PartitionMessage message = new PartitionMessage(1,1L,from,to);
+		PartitionMessage message = new PartitionMessage(1,UUID.randomUUID(),from,to);
 		message.setParameter("test", "value");
 		
 		Object o = encoder.encode(null, null, message);
@@ -40,7 +40,7 @@ public class PartitionMessageEncoderTest {
 		kryo.addDefaultSerializer(UUID.class, UUIDSerializer.class);
 		ActorId from = new ActorIdImpl(UUID.randomUUID(), "this");
 		ActorId to = new ActorIdImpl(UUID.randomUUID(), "this");
-		PartitionMessage message = new PartitionMessage(1,1L,from,to);
+		PartitionMessage message = new PartitionMessage(1,UUID.randomUUID(),from,to);
 		message.setParameter("test", "value");
 
         Output out = new Output(4096);

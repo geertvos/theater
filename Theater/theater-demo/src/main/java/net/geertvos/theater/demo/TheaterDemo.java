@@ -89,7 +89,6 @@ public class TheaterDemo {
 		partitionServer.start();
 		
 		final PartitionMessageSender sender = new PartitionMessageSender(partitionManager);
-		final AtomicLong seq = new AtomicLong();
 		final ActorId to = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 		final ActorId from = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 
@@ -98,7 +97,7 @@ public class TheaterDemo {
 			
 			@Override
 			public void run() {
-				final PartitionMessage message = new PartitionMessage(1, seq.incrementAndGet(), from, to);
+				final PartitionMessage message = new PartitionMessage(1, UUID.randomUUID(), from, to);
 				message.setParameter("test", "value");
 				sender.sendMessage(message);
 			}
