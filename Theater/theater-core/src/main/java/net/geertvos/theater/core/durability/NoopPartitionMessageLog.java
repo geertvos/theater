@@ -15,7 +15,7 @@ public class NoopPartitionMessageLog implements MessageLog {
 	}
 
 	public List<Message> getUnackedMessages() {
-		return Collections.EMPTY_LIST;
+		return Collections.emptyList();
 	}
 
 }
