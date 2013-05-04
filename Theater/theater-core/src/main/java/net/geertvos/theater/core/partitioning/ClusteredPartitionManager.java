@@ -19,6 +19,8 @@ import net.geertvos.theater.core.hashing.FakeHashFunction;
 
 import org.apache.log4j.Logger;
 
+import com.esotericsoftware.minlog.Log;
+
 public class ClusteredPartitionManager implements PartitionManager, ClusterEventListener {
 
 	private Logger logger = Logger.getLogger(ClusteredPartitionManager.class);
@@ -68,18 +70,20 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 	
 
 	public void onNewActiveMember(ClusterMember member, List<ClusterMember> members) {
+		Log.info("Cluster member "+member.getId()+" joined, redistributing partitions.");
 		updatePartitions(members);
 	}
 
 	public void onNewInactiveMember(ClusterMember member, List<ClusterMember> members) {
-		updatePartitions(members);
 	}
 
 	public void onMemberActivated(ClusterMember member, List<ClusterMember> members) {
+		Log.info("Cluster member "+member.getId()+" joined, redistributing partitions.");
 		updatePartitions(members);
 	}
 
 	public void onMemberDeactivated(ClusterMember member, List<ClusterMember> members) {
+		Log.info("Cluster member "+member.getId()+" left, redistributing partitions.");
 		updatePartitions(members);
 	}
 
@@ -97,6 +101,9 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 					createRemotePartition(i, member);
 				}
 			}
+			Log.info("Partitions distributed, awaiting cluster stability.");
+		} catch(Exception e) {
+			Log.error("Error while updating partition distribution",e);
 		} finally {
 			initLatch.countDown();
 			writeLock.unlock();
@@ -107,7 +114,10 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		try {
 			readLock.lock();
 			for(Partition p : partitions) {
-				p.onInit();
+				if(!p.isOperational()) {
+					Log.debug("Partition "+p.getId()+" initialized.");
+					p.onInit();
+				}
 			}
 		} finally {
 			readLock.unlock();
@@ -123,6 +133,7 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		}
 		logger.info("Partition "+i+" relocates to remote cluster member "+member.getId());
 		current.onDestroy();
+		logger.debug("Partition "+i+" destroyed.");
 		RemotePartition newPartition = remotePartitionFactory.createPartition(i, member);
 		partitions.remove(i);
 		partitions.add(i, newPartition);
@@ -130,12 +141,13 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 
 	private void createLocalPartition(int i) {
 		Partition current = partitions.get(i);
-		if(current instanceof LocalPartition) {
+		if(current.isLocal()) {
 			logger.info("Partition "+i+" stays at local cluster member");
 			return;
 		}
 		logger.info("Partition "+i+" relocates to local cluster member");
 		current.onDestroy();
+		logger.debug("Partition "+i+" destroyed.");
 		LocalPartition newPartition = localPartitionFactory.createPartition(i);
 		partitions.remove(i);
 		partitions.add(i, newPartition);

@@ -20,7 +20,7 @@ public class RemotePartition implements Partition {
 	private final int port;
 	private PartitionClient client;
 	private final MessageLog messageLog;
-	private AtomicBoolean operational = new AtomicBoolean(false);
+	private volatile boolean operational = false;
 	
 	public RemotePartition(int id, ClusterMember clusterMember, MessageLog messageLog) {
 		this.id = id;
@@ -34,7 +34,7 @@ public class RemotePartition implements Partition {
 	}
 
 	public void handleMessage(Message message) {
-		if(operational.get()) {
+		if(operational) {
 			log.debug("Sending message "+message+" to remote partition "+id);
 			client.sendMessage(message);
 		}
@@ -47,16 +47,26 @@ public class RemotePartition implements Partition {
 
 	public void onInit() {
 		client = new PartitionClient(clusterMember.getHost(), port);
-		operational.set(true);
+		operational = true;
 	}
 
 	public void onDestroy() {
-		client.disconnect();
-		operational.set(true);
+		if(operational) {
+			client.disconnect();
+		}
+		operational = false;
 	}
 	
 	public ClusterMember getClusterMember() {
 		return clusterMember;
+	}
+
+	public boolean isLocal() {
+		return false;
+	}
+
+	public boolean isOperational() {
+		return operational;
 	}
 
 }

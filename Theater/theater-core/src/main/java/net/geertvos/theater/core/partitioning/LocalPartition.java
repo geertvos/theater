@@ -47,7 +47,7 @@ public class LocalPartition implements Partition {
 	public int getId() {
 		return id;
 	}
-
+	
 	public void onInit() {
 		operational = true;
 		for(Message message : log.getUnackedMessages()) {
@@ -58,6 +58,14 @@ public class LocalPartition implements Partition {
 
 	public void onDestroy() {
 		operational = false;
+	}
+
+	public boolean isLocal() {
+		return true;
+	}
+
+	public boolean isOperational() {
+		return operational;
 	}
 
 }
