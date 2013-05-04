@@ -1,10 +1,12 @@
 package net.geertvos.theater.api.messaging;
 
+import java.util.UUID;
+
 import net.geertvos.theater.api.actors.ActorId;
 
 public interface Message {
 
-	long getSequenceNumber();
+	UUID getMessageId();
 	
 	ActorId getTo();
 	

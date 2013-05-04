@@ -2,6 +2,7 @@ package net.geertvos.theater.core.networking;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.messaging.Message;
@@ -9,13 +10,13 @@ import net.geertvos.theater.api.messaging.Message;
 public class PartitionMessage implements Message {
 
 	private int type;
-	private long sequenceNumber;
+	private UUID messageId;
 	private ActorId to;
 	private ActorId from;
 	private Map<String, String> parameters = new HashMap<String, String>();
 
-	public PartitionMessage(int type, long sequenceNumber, ActorId from, ActorId to) {
-		this.sequenceNumber = sequenceNumber;
+	public PartitionMessage(int type, UUID messageId, ActorId from, ActorId to) {
+		this.messageId = messageId;
 		this.from = from;
 		this.to = to;
 		this.type = type;
@@ -60,17 +61,17 @@ public class PartitionMessage implements Message {
 		return parameters.get(name);
 	}
 
-	public void setSequenceNumber(long number) {
-		this.sequenceNumber = number;
+	public void setMessageId(UUID id) {
+		this.messageId = id;
 	}
 	
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Message ").append(sequenceNumber).append(" : [").append(from.getId()).append("] -> [").append(to.getId()).append("] : ").append(parameters);
+		builder.append("Message ").append(messageId).append(" : [").append(from.getId()).append("] -> [").append(to.getId()).append("] : ").append(parameters);
 		return builder.toString();
 	}
 
-	public long getSequenceNumber() {
-		return sequenceNumber;
+	public UUID getMessageId() {
+		return messageId;
 	}
 }
