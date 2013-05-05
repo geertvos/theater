@@ -17,7 +17,8 @@ public class TheaterActor extends AbstractActorAdapter {
 	}
 
 	public void handleMessage(Message message) {
-		System.out.println(message);
+		String counter = message.getParameter("counter");
+		System.out.println("Actor "+id+" - "+counter);
 	}
 
 }

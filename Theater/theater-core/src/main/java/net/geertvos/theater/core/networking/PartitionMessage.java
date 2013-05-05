@@ -54,7 +54,7 @@ public class PartitionMessage implements Message {
 	}
 
 	public void setParameter(String name, String value) {
-		parameters.put(name, name);
+		parameters.put(name, value);
 	}
 
 	public String getParameter(String name) {

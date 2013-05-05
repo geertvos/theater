@@ -1,8 +1,11 @@
 package net.geertvos.theater.cassandra.durability;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import org.mockito.internal.util.collections.ListUtil;
 
 import me.prettyprint.cassandra.model.HSlicePredicate;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
@@ -17,6 +20,7 @@ import net.geertvos.theater.api.messaging.Message;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.collect.Lists;
 
 public class CassandraMessageLogDao {
 
@@ -72,6 +76,6 @@ public class CassandraMessageLogDao {
 			Message m = deserialize(res.getByteArray(column));
 			messages.add(m);
 		}
-		return messages;
+		return Lists.reverse(messages);
 	}
 }

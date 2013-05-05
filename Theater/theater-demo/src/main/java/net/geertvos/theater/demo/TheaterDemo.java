@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.prettyprint.cassandra.service.ThriftKsDef;
 import me.prettyprint.hector.api.Cluster;
@@ -118,6 +119,7 @@ public class TheaterDemo {
 		final ActorId to = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 		final ActorId from = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 
+		final AtomicInteger integer = new AtomicInteger();
 		Timer t = new Timer();
 		t.scheduleAtFixedRate(new TimerTask() {
 			
@@ -125,6 +127,7 @@ public class TheaterDemo {
 			public void run() {
 				final PartitionMessage message = new PartitionMessage(1, UUID.randomUUID(), from, to);
 				message.setParameter("test", "value");
+				message.setParameter("counter", String.valueOf(integer.incrementAndGet()));
 				sender.sendMessage(message);
 			}
 		}, 600, 1000);

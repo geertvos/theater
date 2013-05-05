@@ -70,5 +70,4 @@ public class ActorIdImpl implements ActorId {
 		this.cluster = cluster;
 	}
 	
-	
 }
