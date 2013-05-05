@@ -21,21 +21,19 @@ import com.google.common.collect.Lists;
 
 public class CassandraMessageLogDao {
 
-	private ColumnFamilyTemplate<Integer, UUID> template;
-	private Kryo kryo;
-	private Output out = new Output(1,Integer.MAX_VALUE);
+	private static final int CLASS_IDENTIFIER = 100;
+	
+	private final ColumnFamilyTemplate<Integer, UUID> template;
+	private final Kryo kryo;
+	private final Output out = new Output(1,Integer.MAX_VALUE);
 	private final Class<Message> messageClass;
 	
 	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class<Message> messageClass) {
 		this.messageClass = messageClass;
 		kryo = new Kryo();
-		kryo.register(messageClass, 100);
+		kryo.register(messageClass, CLASS_IDENTIFIER);
 		kryo.addDefaultSerializer(UUID.class, new net.geertvos.theater.core.serialization.UUIDSerializer());
-		template = new ThriftColumnFamilyTemplate<Integer, UUID>(ksp,
-				columnFamily,
-                                                               IntegerSerializer.get(),
-                                                               UUIDSerializer.get());
-
+		template = new ThriftColumnFamilyTemplate<Integer, UUID>(ksp, columnFamily, IntegerSerializer.get(), UUIDSerializer.get());
 	}
 
 	public void write(int partition, Message message) {
