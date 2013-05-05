@@ -1,11 +1,8 @@
 package net.geertvos.theater.cassandra.durability;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import org.mockito.internal.util.collections.ListUtil;
 
 import me.prettyprint.cassandra.model.HSlicePredicate;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
@@ -27,9 +24,9 @@ public class CassandraMessageLogDao {
 	private ColumnFamilyTemplate<Integer, UUID> template;
 	private Kryo kryo;
 	private Output out = new Output(1,Integer.MAX_VALUE);
-	private final Class messageClass;
+	private final Class<Message> messageClass;
 	
-	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class messageClass) {
+	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class<Message> messageClass) {
 		this.messageClass = messageClass;
 		kryo = new Kryo();
 		kryo.register(messageClass, 100);
