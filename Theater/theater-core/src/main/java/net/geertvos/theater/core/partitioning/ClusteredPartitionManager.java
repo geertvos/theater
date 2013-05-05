@@ -49,7 +49,6 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 		for(int i=0;i<numberOfPartitions;i++) {
 			Partition p = localPartitionFactory.createPartition(i);
 			partitions.add(p);
-			p.onInit();
 		}
 	}
 
@@ -119,6 +118,8 @@ public class ClusteredPartitionManager implements PartitionManager, ClusterEvent
 					p.onInit();
 				}
 			}
+		} catch(Exception e) {
+			logger.error("Exception while initializing new partitions.",e);
 		} finally {
 			readLock.unlock();
 		}

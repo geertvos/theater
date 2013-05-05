@@ -1,5 +1,9 @@
 package net.geertvos.theater.core.partitioning;
 
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.actorstore.ActorStore;
@@ -11,6 +15,7 @@ import net.geertvos.theater.core.durability.NoopPartitionMessageLog;
 
 public class LocalPartition implements Partition {
 
+	private final Logger LOG = Logger.getLogger(LocalPartition.class);
 	private volatile boolean operational;
 	private final ActorStore store;
 	private final ActorFactory factory;
@@ -50,7 +55,12 @@ public class LocalPartition implements Partition {
 	
 	public void onInit() {
 		operational = true;
-		for(Message message : log.getUnackedMessages()) {
+		LOG.info("Initializing partition "+id);
+		List<Message> unacked = log.getUnackedMessages();
+		if(unacked.size() > 0) {
+			LOG.info("Replaying "+unacked.size()+" messages for partition "+id);
+		}
+		for(Message message : unacked) {
 			handleMessage(message);
 			log.ackMessage(message);
 		}

@@ -23,10 +23,12 @@ public class CassandraMessageLogDao {
 	private ColumnFamilyTemplate<Integer, UUID> template;
 	private Kryo kryo;
 	private Output out = new Output(1,Integer.MAX_VALUE);
-
-	public CassandraMessageLogDao(Keyspace ksp, String columnFamily) {
+	private final Class messageClass;
+	
+	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class messageClass) {
+		this.messageClass = messageClass;
 		kryo = new Kryo();
-		kryo.register(Message.class, 100);
+		kryo.register(messageClass, 100);
 		kryo.addDefaultSerializer(UUID.class, new net.geertvos.theater.core.serialization.UUIDSerializer());
 		template = new ThriftColumnFamilyTemplate<Integer, UUID>(ksp,
 				columnFamily,
@@ -58,7 +60,7 @@ public class CassandraMessageLogDao {
 	
 	private Message deserialize(byte[] data) {
 		Input in = new Input(data);
-		return kryo.readObject(in, Message.class);
+		return kryo.readObject(in, messageClass);
 	}
 
 	public List<Message> getPartition(int partition) {
