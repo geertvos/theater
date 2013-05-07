@@ -7,7 +7,7 @@ import java.util.UUID;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.messaging.Message;
 
-public class PartitionMessage implements Message {
+public class SegmentMessage implements Message {
 
 	private int type;
 	private UUID messageId;
@@ -15,14 +15,14 @@ public class PartitionMessage implements Message {
 	private ActorId from;
 	private Map<String, String> parameters = new HashMap<String, String>();
 
-	public PartitionMessage(int type, UUID messageId, ActorId from, ActorId to) {
+	public SegmentMessage(int type, UUID messageId, ActorId from, ActorId to) {
 		this.messageId = messageId;
 		this.from = from;
 		this.to = to;
 		this.type = type;
 	}
 
-	public PartitionMessage() {
+	public SegmentMessage() {
 	}
 
 	public void setTo(ActorId id) {

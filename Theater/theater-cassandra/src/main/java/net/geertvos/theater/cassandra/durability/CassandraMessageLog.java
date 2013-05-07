@@ -7,24 +7,24 @@ import net.geertvos.theater.api.messaging.Message;
 
 public class CassandraMessageLog implements MessageLog {
 
-	private final int partition;
+	private final int segment;
 	private final CassandraMessageLogDao dao;
 	
-	public CassandraMessageLog(int partition, CassandraMessageLogDao dao) {
-		this.partition = partition;
+	public CassandraMessageLog(int segment, CassandraMessageLogDao dao) {
+		this.segment = segment;
 		this.dao = dao;
 	}
 
 	public void logMessage(Message message) {
-		dao.write(partition, message);
+		dao.write(segment, message);
 	}
 
 	public void ackMessage(Message message) {
-		dao.delete(partition, message.getMessageId());
+		dao.delete(segment, message.getMessageId());
 	}
 
 	public List<Message> getUnackedMessages() {
-		return dao.getPartition(partition);
+		return dao.getSegment(segment);
 	}
 
 }

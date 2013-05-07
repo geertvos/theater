@@ -16,13 +16,13 @@ import com.esotericsoftware.kryo.io.Output;
 /**
  * @author Geert Vos
  */
-public class PartitionMessageEncoder extends OneToOneEncoder {
+public class SegmentMessageEncoder extends OneToOneEncoder {
 
 	private Kryo kryo;
 
-	public PartitionMessageEncoder() {
+	public SegmentMessageEncoder() {
 		kryo = new Kryo();
-		kryo.register(PartitionMessage.class);
+		kryo.register(SegmentMessage.class);
 		kryo.register(ActorIdImpl.class);
 		kryo.addDefaultSerializer(UUID.class, UUIDSerializer.class);
 	}
@@ -30,7 +30,7 @@ public class PartitionMessageEncoder extends OneToOneEncoder {
 	
 	@Override
 	public Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
-		PartitionMessage pm = (PartitionMessage)msg;
+		SegmentMessage pm = (SegmentMessage)msg;
         Output out = new Output(4096, Integer.MAX_VALUE);
         kryo.writeObject(out, pm);
         return ChannelBuffers.wrappedBuffer(out.getBuffer());

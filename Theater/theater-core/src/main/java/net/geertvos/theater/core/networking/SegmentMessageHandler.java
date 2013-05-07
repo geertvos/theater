@@ -2,9 +2,9 @@ package net.geertvos.theater.core.networking;
 
 import java.io.IOException;
 
-import net.geertvos.theater.api.partitioning.Partition;
-import net.geertvos.theater.api.partitioning.PartitionManager;
-import net.geertvos.theater.core.partitioning.LocalPartition;
+import net.geertvos.theater.api.partitioning.Segment;
+import net.geertvos.theater.api.partitioning.SegmentManager;
+import net.geertvos.theater.core.segmenting.LocalSegment;
 
 import org.apache.log4j.Logger;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -12,20 +12,20 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 
-public class PartitionMessageHandler extends SimpleChannelHandler {
+public class SegmentMessageHandler extends SimpleChannelHandler {
 
-	private Logger log = Logger.getLogger(PartitionMessageHandler.class);
-	private final PartitionManager manager;
+	private Logger log = Logger.getLogger(SegmentMessageHandler.class);
+	private final SegmentManager manager;
 	
-	public PartitionMessageHandler(PartitionManager manager) {
+	public SegmentMessageHandler(SegmentManager manager) {
 		this.manager = manager;
 	}
 	
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-		PartitionMessage message = (PartitionMessage) e.getMessage();
-		Partition partition = manager.findPartitionForActor(message.getTo());
-		if(partition instanceof LocalPartition) {
+		SegmentMessage message = (SegmentMessage) e.getMessage();
+		Segment partition = manager.findSegmentForActor(message.getTo());
+		if(partition instanceof LocalSegment) {
 			partition.handleMessage(message);
 		} else {
 			//reply with error

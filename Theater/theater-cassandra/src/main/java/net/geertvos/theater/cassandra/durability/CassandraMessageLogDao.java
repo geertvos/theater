@@ -36,19 +36,19 @@ public class CassandraMessageLogDao<T> {
 		template = new ThriftColumnFamilyTemplate<Integer, UUID>(ksp, columnFamily, IntegerSerializer.get(), UUIDSerializer.get());
 	}
 
-	public void write(int partition, Message message) {
-		ColumnFamilyUpdater<Integer, UUID> updater = template.createUpdater(partition);
+	public void write(int segment, Message message) {
+		ColumnFamilyUpdater<Integer, UUID> updater = template.createUpdater(segment);
 		updater.setByteArray(message.getMessageId(), serialize(message));
 		template.update(updater);
 	}
 	
-	public T read(int partition, UUID id) {
-		 ColumnFamilyResult<Integer, UUID> res = template.queryColumns(partition);
+	public T read(int segment, UUID id) {
+		 ColumnFamilyResult<Integer, UUID> res = template.queryColumns(segment);
 		 return deserialize(res.getByteArray(id));
 	}
 	
-	public void delete(int partition, UUID id) {
-		template.deleteColumn(partition, id);
+	public void delete(int segment, UUID id) {
+		template.deleteColumn(segment, id);
 	}
 	
 	private byte[] serialize(Message m) {
@@ -62,10 +62,10 @@ public class CassandraMessageLogDao<T> {
 		return kryo.readObject(in, messageClass);
 	}
 
-	public List<T> getPartition(int partition) {
+	public List<T> getSegment(int segment) {
 		HSlicePredicate<UUID> predicate = new HSlicePredicate<UUID>(UUIDSerializer.get());
 		predicate.setRange(null, null, false, Integer.MAX_VALUE);
-		ColumnFamilyResult<Integer, UUID> res = template.queryColumns(partition,predicate);
+		ColumnFamilyResult<Integer, UUID> res = template.queryColumns(segment,predicate);
 		ArrayList<T> messages = new ArrayList<T>();
 		for(UUID column : res.getColumnNames()) {
 			T m = deserialize(res.getByteArray(column));

@@ -30,14 +30,14 @@ import net.geertvos.theater.cassandra.actorstore.CassandraActorStore;
 import net.geertvos.theater.cassandra.durability.CassandraMessageLog;
 import net.geertvos.theater.cassandra.durability.CassandraMessageLogDao;
 import net.geertvos.theater.core.actor.ActorIdImpl;
-import net.geertvos.theater.core.messaging.PartitionMessageSender;
-import net.geertvos.theater.core.networking.PartitionMessage;
-import net.geertvos.theater.core.networking.PartitionServer;
-import net.geertvos.theater.core.partitioning.ClusteredPartitionManager;
-import net.geertvos.theater.core.partitioning.LocalPartition;
-import net.geertvos.theater.core.partitioning.LocalPartitionFactory;
-import net.geertvos.theater.core.partitioning.RemotePartition;
-import net.geertvos.theater.core.partitioning.RemotePartitionFactory;
+import net.geertvos.theater.core.messaging.SegmentMessageSender;
+import net.geertvos.theater.core.networking.SegmentMessage;
+import net.geertvos.theater.core.networking.SegmentServer;
+import net.geertvos.theater.core.segmenting.ClusteredSegmentManager;
+import net.geertvos.theater.core.segmenting.LocalSegment;
+import net.geertvos.theater.core.segmenting.LocalSegmentFactory;
+import net.geertvos.theater.core.segmenting.RemoteSegment;
+import net.geertvos.theater.core.segmenting.RemoteSegmentFactory;
 
 import org.apache.log4j.BasicConfigurator;
 
@@ -68,11 +68,11 @@ public class TheaterDemo {
 
 		Keyspace ksp = HFactory.createKeyspace(THEATER_KEYSPACE, myCluster);
 		
-		final CassandraMessageLogDao<PartitionMessage> messageLogDao = new CassandraMessageLogDao<PartitionMessage>(ksp, MESSAGE_LOG_COLUMNFAMILIY, PartitionMessage.class);
+		final CassandraMessageLogDao<SegmentMessage> messageLogDao = new CassandraMessageLogDao<SegmentMessage>(ksp, MESSAGE_LOG_COLUMNFAMILIY, SegmentMessage.class);
 		
 		GossipClusterMember member = new GossipClusterMember("Member-"+knows, "localhost", 8000+knows, System.currentTimeMillis(),"");
 		Map<String,String> meta = new HashMap<String,String>();
-		meta.put("partitionServer.port", "500"+number);
+		meta.put("segmentServer.port", "500"+number);
 		GossipCluster cluster = new GossipCluster(CLUSTER, "Member-"+number, "localhost", 8000+number, meta, member );
 		GossipServer server = new GossipServer(cluster);
 		server.start();
@@ -86,25 +86,25 @@ public class TheaterDemo {
 		CassandraActorDao actorDao = new CassandraActorDao(ksp, ACTOR_STORE_COLUMNFAMILIY, TheaterActor.class);
 		final ActorStore store = new CassandraActorStore(actorDao);
 
-		LocalPartitionFactory local = new LocalPartitionFactory() {
+		LocalSegmentFactory local = new LocalSegmentFactory() {
 
-			public LocalPartition createPartition(int id) {
+			public LocalSegment createSegment(int id) {
 				MessageLog log = new CassandraMessageLog(id, messageLogDao);
-				return new LocalPartition(id, factory, store, log);
+				return new LocalSegment(id, factory, store, log);
 			}
 		};
-		RemotePartitionFactory remote = new RemotePartitionFactory() {
+		RemoteSegmentFactory remote = new RemoteSegmentFactory() {
 
-			public RemotePartition createPartition(int id, ClusterMember host) {
+			public RemoteSegment createSegment(int id, ClusterMember host) {
 				MessageLog log = new CassandraMessageLog(id, messageLogDao);
-				return new RemotePartition(id, host, log);
+				return new RemoteSegment(id, host, log);
 			}
 		};
-		ClusteredPartitionManager partitionManager = new ClusteredPartitionManager(8, cluster, local, remote);
-		PartitionServer partitionServer = new PartitionServer("localhost", 5000+number, partitionManager);
-		partitionServer.start();
+		ClusteredSegmentManager segmentManager = new ClusteredSegmentManager(8, cluster, local, remote);
+		SegmentServer segmentServer = new SegmentServer("localhost", 5000+number, segmentManager);
+		segmentServer.start();
 		
-		final PartitionMessageSender sender = new PartitionMessageSender(partitionManager);
+		final SegmentMessageSender sender = new SegmentMessageSender(segmentManager);
 		final ActorId to = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 		final ActorId from = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 
@@ -115,7 +115,7 @@ public class TheaterDemo {
 				
 				@Override
 				public void run() {
-					final PartitionMessage message = new PartitionMessage(1, UUID.randomUUID(), from, to);
+					final SegmentMessage message = new SegmentMessage(1, UUID.randomUUID(), from, to);
 					message.setParameter("counter", String.valueOf(integer.incrementAndGet()));
 					sender.sendMessage(message);
 				}

@@ -6,7 +6,7 @@ import java.util.List;
 import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
 
-public class NoopPartitionMessageLog implements MessageLog {
+public class NoopMessageLog implements MessageLog {
 
 	public void logMessage(Message message) {
 	}

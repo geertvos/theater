@@ -4,9 +4,9 @@ import java.util.UUID;
 
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.core.actor.ActorIdImpl;
-import net.geertvos.theater.core.networking.PartitionMessage;
-import net.geertvos.theater.core.networking.PartitionMessageDecoder;
-import net.geertvos.theater.core.networking.PartitionMessageEncoder;
+import net.geertvos.theater.core.networking.SegmentMessage;
+import net.geertvos.theater.core.networking.SegmentMessageDecoder;
+import net.geertvos.theater.core.networking.SegmentMessageEncoder;
 import net.geertvos.theater.core.serialization.UUIDSerializer;
 
 import org.testng.annotations.Test;
@@ -17,16 +17,16 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 
-public class PartitionMessageEncoderTest {
+public class SegmentMessageEncoderTest {
 
 	@Test( groups = "unitTest")
 	public void testEncoder() throws Exception {
-		PartitionMessageEncoder encoder = new PartitionMessageEncoder();
-		PartitionMessageDecoder decoder = new PartitionMessageDecoder();
+		SegmentMessageEncoder encoder = new SegmentMessageEncoder();
+		SegmentMessageDecoder decoder = new SegmentMessageDecoder();
 		
 		ActorId from = new ActorIdImpl(UUID.randomUUID(), "this");
 		ActorId to = new ActorIdImpl(UUID.randomUUID(), "this");
-		PartitionMessage message = new PartitionMessage(1,UUID.randomUUID(),from,to);
+		SegmentMessage message = new SegmentMessage(1,UUID.randomUUID(),from,to);
 		message.setParameter("test", "value");
 		
 		Object o = encoder.encode(null, null, message);
@@ -40,7 +40,7 @@ public class PartitionMessageEncoderTest {
 		kryo.addDefaultSerializer(UUID.class, UUIDSerializer.class);
 		ActorId from = new ActorIdImpl(UUID.randomUUID(), "this");
 		ActorId to = new ActorIdImpl(UUID.randomUUID(), "this");
-		PartitionMessage message = new PartitionMessage(1,UUID.randomUUID(),from,to);
+		SegmentMessage message = new SegmentMessage(1,UUID.randomUUID(),from,to);
 		message.setParameter("test", "value");
 
         Output out = new Output(4096);
@@ -49,7 +49,7 @@ public class PartitionMessageEncoderTest {
 		buffer.rewind();
 		ByteBufferInputStream inStream = new ByteBufferInputStream(buffer);
 		Input in = new Input(inStream);
-		PartitionMessage m2 = kryo.readObject(in, PartitionMessage.class);
+		SegmentMessage m2 = kryo.readObject(in, SegmentMessage.class);
 	}
 	
 }

@@ -17,13 +17,13 @@ import com.esotericsoftware.kryo.io.Input;
 /**
  * @author Geert Vos
  */
-public class PartitionMessageDecoder extends OneToOneDecoder {
+public class SegmentMessageDecoder extends OneToOneDecoder {
 
 	private Kryo kryo;
 	
-	public PartitionMessageDecoder() {
+	public SegmentMessageDecoder() {
 		kryo = new Kryo();
-		kryo.register(PartitionMessage.class);
+		kryo.register(SegmentMessage.class);
 		kryo.register(ActorIdImpl.class);
 		kryo.addDefaultSerializer(UUID.class, UUIDSerializer.class);
 	}
@@ -33,7 +33,7 @@ public class PartitionMessageDecoder extends OneToOneDecoder {
 		ChannelBuffer buffer = (ChannelBuffer)msg;
 		ChannelBufferInputStream inStream = new ChannelBufferInputStream(buffer);
 		Input in = new Input(inStream);
-		return kryo.readObject(in, PartitionMessage.class);
+		return kryo.readObject(in, SegmentMessage.class);
 	}
 	
 }

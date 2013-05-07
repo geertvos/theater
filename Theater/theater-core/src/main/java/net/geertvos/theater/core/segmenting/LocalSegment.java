@@ -1,4 +1,4 @@
-package net.geertvos.theater.core.partitioning;
+package net.geertvos.theater.core.segmenting;
 
 import java.util.List;
 
@@ -9,15 +9,15 @@ import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.events.ActorEventDispatcher;
 import net.geertvos.theater.api.factory.ActorFactory;
 import net.geertvos.theater.api.messaging.Message;
-import net.geertvos.theater.api.partitioning.Partition;
-import net.geertvos.theater.core.durability.NoopPartitionMessageLog;
+import net.geertvos.theater.api.partitioning.Segment;
+import net.geertvos.theater.core.durability.NoopMessageLog;
 import net.geertvos.theater.core.events.SynchronousActorEventDispatcher;
 
 import org.apache.log4j.Logger;
 
-public class LocalPartition implements Partition {
+public class LocalSegment implements Segment {
 
-	private final Logger LOG = Logger.getLogger(LocalPartition.class);
+	private final Logger LOG = Logger.getLogger(LocalSegment.class);
 	private volatile boolean operational;
 	private final ActorStore store;
 	private final ActorFactory factory;
@@ -25,15 +25,15 @@ public class LocalPartition implements Partition {
 	private final MessageLog log;
 	private final ActorEventDispatcher dispatcher = new SynchronousActorEventDispatcher();
 	
-	public LocalPartition(int id, ActorFactory factory, ActorStore store, MessageLog log) {
+	public LocalSegment(int id, ActorFactory factory, ActorStore store, MessageLog log) {
 		this.id = id;
 		this.store = store;
 		this.factory = factory;
 		this.log = log;
 	}
 
-	public LocalPartition(int id, ActorFactory factory, ActorStore store) {
-		this(id,factory,store,new NoopPartitionMessageLog());
+	public LocalSegment(int id, ActorFactory factory, ActorStore store) {
+		this(id,factory,store,new NoopMessageLog());
 	}
 
 	public void handleMessage(Message message) {
@@ -65,10 +65,10 @@ public class LocalPartition implements Partition {
 	
 	public void onInit() {
 		operational = true;
-		LOG.info("Initializing partition "+id);
+		LOG.info("Initializing local segment "+id);
 		List<Message> unacked = log.getUnackedMessages();
 		if(unacked.size() > 0) {
-			LOG.info("Replaying "+unacked.size()+" messages for partition "+id);
+			LOG.info("Replaying "+unacked.size()+" messages for segment "+id);
 		}
 		for(Message message : unacked) {
 			doHandleMessage(message);

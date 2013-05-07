@@ -11,9 +11,9 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.testng.log4testng.Logger;
 
-public class PartitionClient {
+public class SegmentClient {
 
-	private Logger log = Logger.getLogger(PartitionClient.class);
+	private Logger log = Logger.getLogger(SegmentClient.class);
 	
 	private ClientBootstrap clientBootstrap;
 	private ChannelFuture channelFuture;
@@ -21,11 +21,11 @@ public class PartitionClient {
 	private String host;
 	private int port;
 	
-	public PartitionClient(String host, int port) {
+	public SegmentClient(String host, int port) {
 		this.port = port;
 		this.host = host;
 		clientBootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
-		clientBootstrap.setPipelineFactory(new PartitionClientPipelineFactory());
+		clientBootstrap.setPipelineFactory(new SegmentClientPipelineFactory());
 		channelFuture = clientBootstrap.connect(new InetSocketAddress(host, port));
 	}
 	

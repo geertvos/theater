@@ -2,7 +2,7 @@ package net.geertvos.theater.api.partitioning;
 
 import net.geertvos.theater.api.messaging.Message;
 
-public interface Partition {
+public interface Segment {
 
 	boolean isLocal();
 	
