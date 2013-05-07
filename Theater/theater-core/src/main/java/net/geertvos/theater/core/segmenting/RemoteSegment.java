@@ -1,11 +1,14 @@
 package net.geertvos.theater.core.segmenting;
 
+import java.util.UUID;
+
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.partitioning.Segment;
 import net.geertvos.theater.core.durability.NoopMessageLog;
 import net.geertvos.theater.core.networking.SegmentClient;
+import net.geertvos.theater.core.networking.SegmentMessage;
 
 import org.testng.log4testng.Logger;
 
@@ -19,6 +22,7 @@ public class RemoteSegment implements Segment {
 	private SegmentClient client;
 	private final MessageLog messageLog;
 	private volatile boolean operational = false;
+	private volatile boolean replayRequestSent = false;
 	
 	public RemoteSegment(int id, ClusterMember clusterMember, MessageLog messageLog) {
 		this.id = id;
@@ -34,6 +38,10 @@ public class RemoteSegment implements Segment {
 	public void handleMessage(Message message) {
 		if(operational) {
 			log.debug("Sending message "+message+" to remote segment "+id);
+			if(!replayRequestSent) {
+				client.sendMessage(new SegmentMessage(1, UUID.randomUUID(), null, message.getTo()));
+				replayRequestSent = true;
+			}
 			client.sendMessage(message);
 		}
 		messageLog.logMessage(message);
@@ -53,6 +61,7 @@ public class RemoteSegment implements Segment {
 			client.disconnect();
 		}
 		operational = false;
+		replayRequestSent = false;
 	}
 	
 	public ClusterMember getClusterMember() {

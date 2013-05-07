@@ -67,7 +67,14 @@ public class SegmentMessage implements Message {
 	
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Message ").append(messageId).append(" : [").append(from.getId()).append("] -> [").append(to.getId()).append("] : ").append(parameters);
+		builder.append("Message ").append(messageId).append(" : [");
+		if(from != null) {
+			builder.append(from.getId()).append("] -> [");
+		}
+		if(to != null) {
+			builder.append(to.getId());
+		}
+		builder.append("] : ").append(parameters);
 		return builder.toString();
 	}
 

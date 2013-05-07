@@ -37,12 +37,17 @@ public class LocalSegment implements Segment {
 	}
 
 	public void handleMessage(Message message) {
+		if(operational && message.getFrom() == null && message.getType() == 1) {
+			replayLog();
+			return;
+		}
 		log.logMessage(message);
 		doHandleMessage(message);
 	}
 	
 	private void doHandleMessage(Message message) {
 		if(operational) {
+			
 			ActorId actorId = message.getTo();
 			Actor actor = store.readActor(id, actorId);
 			if(actor == null) {
@@ -66,6 +71,10 @@ public class LocalSegment implements Segment {
 	public void onInit() {
 		operational = true;
 		LOG.info("Initializing local segment "+id);
+		replayLog();
+	}
+
+	private void replayLog() {
 		List<Message> unacked = log.getUnackedMessages();
 		if(unacked.size() > 0) {
 			LOG.info("Replaying "+unacked.size()+" messages for segment "+id);

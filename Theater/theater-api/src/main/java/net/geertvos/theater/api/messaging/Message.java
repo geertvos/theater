@@ -16,4 +16,5 @@ public interface Message {
 	
 	String getParameter(String name);
 	
+	int getType();
 }
