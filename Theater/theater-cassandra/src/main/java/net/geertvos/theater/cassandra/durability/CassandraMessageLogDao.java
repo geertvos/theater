@@ -19,16 +19,16 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 
-public class CassandraMessageLogDao {
+public class CassandraMessageLogDao<T> {
 
 	private static final int CLASS_IDENTIFIER = 100;
 	
 	private final ColumnFamilyTemplate<Integer, UUID> template;
 	private final Kryo kryo;
 	private final Output out = new Output(1,Integer.MAX_VALUE);
-	private final Class<Message> messageClass;
+	private final Class<T> messageClass;
 	
-	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class<Message> messageClass) {
+	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class<T> messageClass) {
 		this.messageClass = messageClass;
 		kryo = new Kryo();
 		kryo.register(messageClass, CLASS_IDENTIFIER);
@@ -42,7 +42,7 @@ public class CassandraMessageLogDao {
 		template.update(updater);
 	}
 	
-	public Message read(int partition, UUID id) {
+	public T read(int partition, UUID id) {
 		 ColumnFamilyResult<Integer, UUID> res = template.queryColumns(partition);
 		 return deserialize(res.getByteArray(id));
 	}
@@ -57,18 +57,18 @@ public class CassandraMessageLogDao {
 		return out.getBuffer();
 	}
 	
-	private Message deserialize(byte[] data) {
+	private T deserialize(byte[] data) {
 		Input in = new Input(data);
 		return kryo.readObject(in, messageClass);
 	}
 
-	public List<Message> getPartition(int partition) {
+	public List<T> getPartition(int partition) {
 		HSlicePredicate<UUID> predicate = new HSlicePredicate<UUID>(UUIDSerializer.get());
 		predicate.setRange(null, null, false, Integer.MAX_VALUE);
 		ColumnFamilyResult<Integer, UUID> res = template.queryColumns(partition,predicate);
-		ArrayList<Message> messages = new ArrayList<Message>();
+		ArrayList<T> messages = new ArrayList<T>();
 		for(UUID column : res.getColumnNames()) {
-			Message m = deserialize(res.getByteArray(column));
+			T m = deserialize(res.getByteArray(column));
 			messages.add(m);
 		}
 		return Lists.reverse(messages);

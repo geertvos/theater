@@ -5,8 +5,8 @@ import net.geertvos.theater.api.actors.ActorId;
 
 public interface ActorStore {
 
-	void writeActor(Actor actor);
+	void writeActor(int partition, Actor actor);
 	
-	Actor readActor(ActorId actorId);
+	Actor readActor(int partition, ActorId actorId);
 	
 }

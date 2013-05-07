@@ -2,16 +2,18 @@ package net.geertvos.theater.core.partitioning;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.actorstore.ActorStore;
 import net.geertvos.theater.api.durability.MessageLog;
+import net.geertvos.theater.api.events.ActorEventDispatcher;
 import net.geertvos.theater.api.factory.ActorFactory;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.partitioning.Partition;
 import net.geertvos.theater.core.durability.NoopPartitionMessageLog;
+import net.geertvos.theater.core.events.SynchronousActorEventDispatcher;
+
+import org.apache.log4j.Logger;
 
 public class LocalPartition implements Partition {
 
@@ -21,6 +23,7 @@ public class LocalPartition implements Partition {
 	private final ActorFactory factory;
 	private final int id;
 	private final MessageLog log;
+	private final ActorEventDispatcher dispatcher = new SynchronousActorEventDispatcher();
 	
 	public LocalPartition(int id, ActorFactory factory, ActorStore store, MessageLog log) {
 		this.id = id;
@@ -35,15 +38,22 @@ public class LocalPartition implements Partition {
 
 	public void handleMessage(Message message) {
 		log.logMessage(message);
+		doHandleMessage(message);
+	}
+	
+	private void doHandleMessage(Message message) {
 		if(operational) {
 			ActorId actorId = message.getTo();
-			Actor actor = store.readActor(actorId);
+			Actor actor = store.readActor(id, actorId);
 			if(actor == null) {
 				actor = factory.createActor(message);
+				dispatcher.onCreate(actor);
 			}
 			if(actor != null) {
-				store.writeActor(actor);
-				actor.handleMessage(message);
+				dispatcher.onActivate(actor);
+				//TODO: remove the write here
+				dispatcher.onHandleMessage(actor, message);
+				store.writeActor(id, actor);
 				log.ackMessage(message);
 			}
 		}
@@ -61,8 +71,7 @@ public class LocalPartition implements Partition {
 			LOG.info("Replaying "+unacked.size()+" messages for partition "+id);
 		}
 		for(Message message : unacked) {
-			handleMessage(message);
-			log.ackMessage(message);
+			doHandleMessage(message);
 		}
 	}
 

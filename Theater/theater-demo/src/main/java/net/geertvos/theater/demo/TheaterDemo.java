@@ -25,10 +25,11 @@ import net.geertvos.theater.api.actorstore.ActorStore;
 import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.factory.ActorFactory;
 import net.geertvos.theater.api.messaging.Message;
+import net.geertvos.theater.cassandra.actorstore.CassandraActorDao;
+import net.geertvos.theater.cassandra.actorstore.CassandraActorStore;
 import net.geertvos.theater.cassandra.durability.CassandraMessageLog;
 import net.geertvos.theater.cassandra.durability.CassandraMessageLogDao;
 import net.geertvos.theater.core.actor.ActorIdImpl;
-import net.geertvos.theater.core.durability.NoopPartitionMessageLog;
 import net.geertvos.theater.core.messaging.PartitionMessageSender;
 import net.geertvos.theater.core.networking.PartitionMessage;
 import net.geertvos.theater.core.networking.PartitionServer;
@@ -45,6 +46,7 @@ public class TheaterDemo {
 	private static final String MESSAGE_LOG_COLUMNFAMILIY = "messageLog";
 	private static final String THEATER_KEYSPACE = "theater";
 	private static final String CLUSTER = "demoCluster";
+	private static final String ACTOR_STORE_COLUMNFAMILIY = "actorStore";
 	
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
@@ -57,17 +59,16 @@ public class TheaterDemo {
 		
 		Cluster myCluster = HFactory.getOrCreateCluster("Geert Cluster", "localhost:9160");
 		ColumnFamilyDefinition cfDef = HFactory.createColumnFamilyDefinition(THEATER_KEYSPACE, MESSAGE_LOG_COLUMNFAMILIY, ComparatorType.BYTESTYPE);
-
-		KeyspaceDefinition newKeyspace = HFactory.createKeyspaceDefinition(THEATER_KEYSPACE, ThriftKsDef.DEF_STRATEGY_CLASS, 1, Arrays.asList(cfDef));
-
+		ColumnFamilyDefinition actorStoreDef = HFactory.createColumnFamilyDefinition(THEATER_KEYSPACE, ACTOR_STORE_COLUMNFAMILIY, ComparatorType.BYTESTYPE);
+		KeyspaceDefinition newKeyspace = HFactory.createKeyspaceDefinition(THEATER_KEYSPACE, ThriftKsDef.DEF_STRATEGY_CLASS, 1, Arrays.asList(cfDef,actorStoreDef));
 		KeyspaceDefinition keyspaceDef = myCluster.describeKeyspace(THEATER_KEYSPACE);
 		if(keyspaceDef == null) {
-		myCluster.addKeyspace(newKeyspace, true);
+			myCluster.addKeyspace(newKeyspace, true);
 		}
 
 		Keyspace ksp = HFactory.createKeyspace(THEATER_KEYSPACE, myCluster);
 		
-		final CassandraMessageLogDao messageLogDao = new CassandraMessageLogDao(ksp, MESSAGE_LOG_COLUMNFAMILIY, PartitionMessage.class);
+		final CassandraMessageLogDao<PartitionMessage> messageLogDao = new CassandraMessageLogDao<PartitionMessage>(ksp, MESSAGE_LOG_COLUMNFAMILIY, PartitionMessage.class);
 		
 		GossipClusterMember member = new GossipClusterMember("Member-"+knows, "localhost", 8000+knows, System.currentTimeMillis(),"");
 		Map<String,String> meta = new HashMap<String,String>();
@@ -79,23 +80,11 @@ public class TheaterDemo {
 		final ActorFactory factory = new ActorFactory() {
 			
 			public Actor createActor(final Message input) {
-					System.out.println("New actor created: "+input.getTo().getId());
 					return new TheaterActor(input.getTo());
 			}
 		};
-
-		final ActorStore store = new ActorStore() {
-			
-			private Map<ActorId,Actor> actors = new HashMap<ActorId, Actor>();
-			
-			public void writeActor(Actor actor) {
-				actors.put(actor.getId(), actor);
-			}
-			
-			public Actor readActor(ActorId actorId) {
-				return actors.get(actorId);
-			}
-		};
+		CassandraActorDao actorDao = new CassandraActorDao(ksp, ACTOR_STORE_COLUMNFAMILIY, TheaterActor.class);
+		final ActorStore store = new CassandraActorStore(actorDao);
 
 		LocalPartitionFactory local = new LocalPartitionFactory() {
 
@@ -119,18 +108,19 @@ public class TheaterDemo {
 		final ActorId to = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 		final ActorId from = new ActorIdImpl(UUID.randomUUID(), CLUSTER);
 
-		final AtomicInteger integer = new AtomicInteger();
-		Timer t = new Timer();
-		t.scheduleAtFixedRate(new TimerTask() {
-			
-			@Override
-			public void run() {
-				final PartitionMessage message = new PartitionMessage(1, UUID.randomUUID(), from, to);
-				message.setParameter("test", "value");
-				message.setParameter("counter", String.valueOf(integer.incrementAndGet()));
-				sender.sendMessage(message);
-			}
-		}, 600, 1000);
+		if(number == 1) {
+			final AtomicInteger integer = new AtomicInteger();
+			Timer t = new Timer();
+			t.scheduleAtFixedRate(new TimerTask() {
+				
+				@Override
+				public void run() {
+					final PartitionMessage message = new PartitionMessage(1, UUID.randomUUID(), from, to);
+					message.setParameter("counter", String.valueOf(integer.incrementAndGet()));
+					sender.sendMessage(message);
+				}
+			}, 600, 1000);
+		}
 
 	}
 	
