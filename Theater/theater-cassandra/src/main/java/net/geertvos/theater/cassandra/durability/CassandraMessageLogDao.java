@@ -71,6 +71,6 @@ public class CassandraMessageLogDao<T> {
 			T m = deserialize(res.getByteArray(column));
 			messages.add(m);
 		}
-		return Lists.reverse(messages);
+		return messages;
 	}
 }
