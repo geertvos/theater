@@ -5,7 +5,6 @@
     <artifactId>theater-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>net.geertvos.theater</groupId>
   <artifactId>theater-core</artifactId>
   <name>theater-core</name>
   <dependencies>
@@ -29,6 +28,12 @@
 		<artifactId>commons-codec</artifactId>
 		<version>${commons-codec.version}</version>
 	</dependency>
+	<dependency>
+	<groupId>commons-pool</groupId>
+		<artifactId>commons-pool</artifactId>
+		<version>${commons-pool.version}</version>
+	</dependency>
+            
 	<dependency>
 		<groupId>io.netty</groupId>
 		<artifactId>netty</artifactId>

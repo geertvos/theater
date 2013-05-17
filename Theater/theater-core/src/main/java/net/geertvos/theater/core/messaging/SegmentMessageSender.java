@@ -3,8 +3,8 @@ package net.geertvos.theater.core.messaging;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.messaging.MessageSender;
-import net.geertvos.theater.api.partitioning.Segment;
-import net.geertvos.theater.api.partitioning.SegmentManager;
+import net.geertvos.theater.api.segmentation.Segment;
+import net.geertvos.theater.api.segmentation.SegmentManager;
 
 public class SegmentMessageSender implements MessageSender {
 

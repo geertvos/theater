@@ -3,7 +3,7 @@ package net.geertvos.theater.core.networking;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
-import net.geertvos.theater.api.partitioning.SegmentManager;
+import net.geertvos.theater.api.segmentation.SegmentManager;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;

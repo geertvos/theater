@@ -5,6 +5,10 @@ import java.util.UUID;
 import net.geertvos.theater.core.actor.ActorIdImpl;
 import net.geertvos.theater.core.serialization.UUIDSerializer;
 
+import org.apache.commons.pool.BasePoolableObjectFactory;
+import org.apache.commons.pool.ObjectPool;
+import org.apache.commons.pool.PoolableObjectFactory;
+import org.apache.commons.pool.impl.StackObjectPool;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -18,21 +22,31 @@ import com.esotericsoftware.kryo.io.Output;
  */
 public class SegmentMessageEncoder extends OneToOneEncoder {
 
-	private Kryo kryo;
-
+	private final ObjectPool<Kryo> kryoPool;
+	
 	public SegmentMessageEncoder() {
-		kryo = new Kryo();
-		kryo.register(SegmentMessage.class);
-		kryo.register(ActorIdImpl.class);
-		kryo.addDefaultSerializer(UUID.class, UUIDSerializer.class);
+			PoolableObjectFactory<Kryo> realFactory = new BasePoolableObjectFactory<Kryo>() {
+
+				@Override
+				public Kryo makeObject() throws Exception {
+					Kryo kryo = new Kryo();
+					kryo.register(SegmentMessage.class);
+					kryo.register(ActorIdImpl.class);
+					kryo.addDefaultSerializer(UUID.class, UUIDSerializer.class);
+					return kryo;
+				}
+			};
+			kryoPool = new StackObjectPool<Kryo>(realFactory);
 	}
 	
 	
 	@Override
 	public Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
+		Kryo kryo = kryoPool.borrowObject();
 		SegmentMessage pm = (SegmentMessage)msg;
         Output out = new Output(4096, Integer.MAX_VALUE);
         kryo.writeObject(out, pm);
+        kryoPool.returnObject(kryo);
         return ChannelBuffers.wrappedBuffer(out.getBuffer());
 	}
 

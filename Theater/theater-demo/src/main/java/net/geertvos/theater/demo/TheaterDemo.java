@@ -33,11 +33,13 @@ import net.geertvos.theater.core.actor.ActorIdImpl;
 import net.geertvos.theater.core.messaging.SegmentMessageSender;
 import net.geertvos.theater.core.networking.SegmentMessage;
 import net.geertvos.theater.core.networking.SegmentServer;
-import net.geertvos.theater.core.segmenting.ClusteredSegmentManager;
-import net.geertvos.theater.core.segmenting.LocalSegment;
-import net.geertvos.theater.core.segmenting.LocalSegmentFactory;
-import net.geertvos.theater.core.segmenting.RemoteSegment;
-import net.geertvos.theater.core.segmenting.RemoteSegmentFactory;
+import net.geertvos.theater.core.segmentation.ClusteredSegmentManager;
+import net.geertvos.theater.core.segmentation.LocalSegment;
+import net.geertvos.theater.core.segmentation.LocalSegmentFactory;
+import net.geertvos.theater.core.segmentation.RemoteSegment;
+import net.geertvos.theater.core.segmentation.RemoteSegmentFactory;
+import net.geertvos.theater.core.util.ThreadBoundExecutorService;
+import net.geertvos.theater.core.util.ThreadBoundRunnable;
 import net.geertvos.theater.core.util.UUIDGen;
 
 import org.apache.log4j.BasicConfigurator;
@@ -58,7 +60,7 @@ public class TheaterDemo {
 			knows = Integer.parseInt(args[1]);
 		}
 		
-		Cluster myCluster = HFactory.getOrCreateCluster("Geert Cluster", "192.168.5.104:9160");
+		Cluster myCluster = HFactory.getOrCreateCluster("Geert Cluster", "localhost:9160");
 		ColumnFamilyDefinition cfDef = HFactory.createColumnFamilyDefinition(THEATER_KEYSPACE, MESSAGE_LOG_COLUMNFAMILIY, ComparatorType.BYTESTYPE);
 		ColumnFamilyDefinition actorStoreDef = HFactory.createColumnFamilyDefinition(THEATER_KEYSPACE, ACTOR_STORE_COLUMNFAMILIY, ComparatorType.BYTESTYPE);
 		KeyspaceDefinition newKeyspace = HFactory.createKeyspaceDefinition(THEATER_KEYSPACE, ThriftKsDef.DEF_STRATEGY_CLASS, 1, Arrays.asList(cfDef,actorStoreDef));
@@ -71,10 +73,10 @@ public class TheaterDemo {
 		
 		final CassandraMessageLogDao<SegmentMessage> messageLogDao = new CassandraMessageLogDao<SegmentMessage>(ksp, MESSAGE_LOG_COLUMNFAMILIY, SegmentMessage.class);
 		
-		GossipClusterMember member = new GossipClusterMember("Member-"+knows, "192.168.5.104", 8000+knows, System.currentTimeMillis(),"");
+		GossipClusterMember member = new GossipClusterMember("Member-"+knows, "localhost", 8000+knows, System.currentTimeMillis(),"");
 		Map<String,String> meta = new HashMap<String,String>();
 		meta.put("segmentServer.port", "500"+number);
-		GossipCluster cluster = new GossipCluster(CLUSTER, "Member-"+number, "192.168.5.104", 8000+number, meta, member );
+		GossipCluster cluster = new GossipCluster(CLUSTER, "Member-"+number, "localhost", 8000+number, meta, member );
 		GossipServer server = new GossipServer(cluster);
 		server.start();
 
@@ -86,12 +88,12 @@ public class TheaterDemo {
 		};
 		CassandraActorDao actorDao = new CassandraActorDao(ksp, ACTOR_STORE_COLUMNFAMILIY, TheaterActor.class);
 		final ActorStore store = new CassandraActorStore(actorDao);
-
+		final ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor = new ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID>(10);
 		LocalSegmentFactory local = new LocalSegmentFactory() {
 
 			public LocalSegment createSegment(int id) {
 				MessageLog log = new CassandraMessageLog(id, messageLogDao);
-				return new LocalSegment(id, factory, store, log);
+				return new LocalSegment(id, factory, store, log, executor);
 			}
 		};
 		RemoteSegmentFactory remote = new RemoteSegmentFactory() {
@@ -102,7 +104,7 @@ public class TheaterDemo {
 			}
 		};
 		ClusteredSegmentManager segmentManager = new ClusteredSegmentManager(8, cluster, local, remote);
-		SegmentServer segmentServer = new SegmentServer("192.168.5.104", 5000+number, segmentManager);
+		SegmentServer segmentServer = new SegmentServer("localhost", 5000+number, segmentManager);
 		segmentServer.start();
 		
 		final SegmentMessageSender sender = new SegmentMessageSender(segmentManager);
@@ -117,7 +119,7 @@ public class TheaterDemo {
 				@Override
 				public void run() {
 					UUID messageId = UUIDGen.makeType1UUIDFromHost(UUIDGen.getLocalAddress());
-					final SegmentMessage message = new SegmentMessage(1, messageId, from, to);
+					final SegmentMessage message = new SegmentMessage(2, messageId, from, to);
 					message.setParameter("counter", String.valueOf(integer.incrementAndGet()));
 					sender.sendMessage(message);
 				}

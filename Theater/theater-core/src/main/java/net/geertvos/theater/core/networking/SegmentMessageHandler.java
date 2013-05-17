@@ -2,9 +2,9 @@ package net.geertvos.theater.core.networking;
 
 import java.io.IOException;
 
-import net.geertvos.theater.api.partitioning.Segment;
-import net.geertvos.theater.api.partitioning.SegmentManager;
-import net.geertvos.theater.core.segmenting.LocalSegment;
+import net.geertvos.theater.api.segmentation.Segment;
+import net.geertvos.theater.api.segmentation.SegmentManager;
+import net.geertvos.theater.core.segmentation.LocalSegment;
 
 import org.apache.log4j.Logger;
 import org.jboss.netty.channel.ChannelHandlerContext;

@@ -1,4 +1,4 @@
-package net.geertvos.theater.core.segmenting;
+package net.geertvos.theater.core.segmentation;
 
 
 public interface LocalSegmentFactory {

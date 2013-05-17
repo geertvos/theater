@@ -14,6 +14,7 @@ public class SegmentMessage implements Message {
 	private ActorId to;
 	private ActorId from;
 	private Map<String, String> parameters = new HashMap<String, String>();
+	private boolean durable = true;
 
 	public SegmentMessage(int type, UUID messageId, ActorId from, ActorId to) {
 		this.messageId = messageId;
@@ -80,5 +81,13 @@ public class SegmentMessage implements Message {
 
 	public UUID getMessageId() {
 		return messageId;
+	}
+
+	public boolean isDurable() {
+		return durable;
+	}
+
+	public void setDurable(boolean durable) {
+		this.durable = durable;
 	}
 }

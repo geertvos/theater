@@ -33,11 +33,13 @@ import net.geertvos.theater.core.actor.ActorIdImpl;
 import net.geertvos.theater.core.messaging.SegmentMessageSender;
 import net.geertvos.theater.core.networking.SegmentMessage;
 import net.geertvos.theater.core.networking.SegmentServer;
-import net.geertvos.theater.core.segmenting.ClusteredSegmentManager;
-import net.geertvos.theater.core.segmenting.LocalSegment;
-import net.geertvos.theater.core.segmenting.LocalSegmentFactory;
-import net.geertvos.theater.core.segmenting.RemoteSegment;
-import net.geertvos.theater.core.segmenting.RemoteSegmentFactory;
+import net.geertvos.theater.core.segmentation.ClusteredSegmentManager;
+import net.geertvos.theater.core.segmentation.LocalSegment;
+import net.geertvos.theater.core.segmentation.LocalSegmentFactory;
+import net.geertvos.theater.core.segmentation.RemoteSegment;
+import net.geertvos.theater.core.segmentation.RemoteSegmentFactory;
+import net.geertvos.theater.core.util.ThreadBoundExecutorService;
+import net.geertvos.theater.core.util.ThreadBoundRunnable;
 import net.geertvos.theater.core.util.UUIDGen;
 
 import org.apache.log4j.BasicConfigurator;
@@ -82,12 +84,13 @@ public class RemoteDemo {
 		};
 		CassandraActorDao actorDao = new CassandraActorDao(ksp, ACTOR_STORE_COLUMNFAMILIY, TheaterActor.class);
 		final ActorStore store = new CassandraActorStore(actorDao);
+		final ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor = new ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID>(10);
 
 		LocalSegmentFactory local = new LocalSegmentFactory() {
 
 			public LocalSegment createSegment(int id) {
 				MessageLog log = new CassandraMessageLog(id, messageLogDao);
-				return new LocalSegment(id, factory, store, log);
+				return new LocalSegment(id, factory, store, log, executor);
 			}
 		};
 		RemoteSegmentFactory remote = new RemoteSegmentFactory() {

@@ -14,12 +14,16 @@ import me.prettyprint.cassandra.service.template.ThriftColumnFamilyTemplate;
 import me.prettyprint.hector.api.Keyspace;
 import net.geertvos.theater.api.messaging.Message;
 
+import org.testng.log4testng.Logger;
+
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.google.common.collect.Lists;
 
 public class CassandraMessageLogDao<T> {
+
+	private Logger log = Logger.getLogger(CassandraMessageLogDao.class);
 
 	private static final int CLASS_IDENTIFIER = 100;
 	
@@ -44,7 +48,13 @@ public class CassandraMessageLogDao<T> {
 	
 	public T read(int segment, UUID id) {
 		 ColumnFamilyResult<Integer, UUID> res = template.queryColumns(segment);
-		 return deserialize(res.getByteArray(id));
+		 try {
+			 return deserialize(res.getByteArray(id));
+		 } catch(KryoException e) {
+			 log.error("Deserialization of message failed, deleting.",e);
+			 template.deleteColumn(segment, id);
+			 return null;
+		 }
 	}
 	
 	public void delete(int segment, UUID id) {
@@ -68,8 +78,13 @@ public class CassandraMessageLogDao<T> {
 		ColumnFamilyResult<Integer, UUID> res = template.queryColumns(segment,predicate);
 		ArrayList<T> messages = new ArrayList<T>();
 		for(UUID column : res.getColumnNames()) {
-			T m = deserialize(res.getByteArray(column));
-			messages.add(m);
+			try {
+				T m = deserialize(res.getByteArray(column));
+				messages.add(m);
+			} catch(KryoException e) {
+				log.error("Deserialization of message failed, deleting.",e);
+				template.deleteColumn(segment, column);
+			}
 		}
 		return messages;
 	}

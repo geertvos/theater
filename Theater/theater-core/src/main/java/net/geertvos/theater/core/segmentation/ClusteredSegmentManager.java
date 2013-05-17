@@ -1,4 +1,4 @@
-package net.geertvos.theater.core.segmenting;
+package net.geertvos.theater.core.segmentation;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,8 +13,8 @@ import net.geertvos.gossip.api.cluster.ClusterEventListener;
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.ActorId;
 import net.geertvos.theater.api.hashing.ConsistentHashFunction;
-import net.geertvos.theater.api.partitioning.Segment;
-import net.geertvos.theater.api.partitioning.SegmentManager;
+import net.geertvos.theater.api.segmentation.Segment;
+import net.geertvos.theater.api.segmentation.SegmentManager;
 import net.geertvos.theater.core.hashing.FakeHashFunction;
 
 import org.apache.log4j.Logger;
@@ -120,7 +120,7 @@ public class ClusteredSegmentManager implements SegmentManager, ClusterEventList
 				}
 			}
 		} catch(Exception e) {
-			logger.error("Exception while initializing new partitions.",e);
+			logger.error("Exception while initializing new segments.",e);
 		} finally {
 			readLock.unlock();
 		}

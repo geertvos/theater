@@ -24,6 +24,7 @@ public class SegmentClient {
 	public SegmentClient(String host, int port) {
 		this.port = port;
 		this.host = host;
+		//TODO: Move to pooling
 		clientBootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		clientBootstrap.setPipelineFactory(new SegmentClientPipelineFactory());
 		channelFuture = clientBootstrap.connect(new InetSocketAddress(host, port));
@@ -32,6 +33,7 @@ public class SegmentClient {
 	public void sendMessage(final Message message) {
 		log.debug("Trying to send remote message: "+message.toString());
 		if(!channelFuture.getChannel().isConnected()) {
+			//todo: fix race condition
 			channelFuture = clientBootstrap.connect(new InetSocketAddress(host, port));
 		}
 		channelFuture.addListener(new ChannelFutureListener() {

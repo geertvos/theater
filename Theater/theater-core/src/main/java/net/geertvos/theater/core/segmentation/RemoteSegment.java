@@ -1,11 +1,11 @@
-package net.geertvos.theater.core.segmenting;
+package net.geertvos.theater.core.segmentation;
 
 import java.util.UUID;
 
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
-import net.geertvos.theater.api.partitioning.Segment;
+import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.core.durability.NoopMessageLog;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.core.networking.SegmentMessage;
@@ -39,12 +39,18 @@ public class RemoteSegment implements Segment {
 		if(operational) {
 			log.debug("Sending message "+message+" to remote segment "+id);
 			if(!replayRequestSent) {
-				client.sendMessage(new SegmentMessage(1, UUID.randomUUID(), null, message.getTo()));
+				//TODO: refactor into segment control message
+				SegmentMessage replayRequest = new SegmentMessage(1, UUID.randomUUID(), null, message.getTo());
+				replayRequest.setParameter("messageId", message.getMessageId().toString());
+				replayRequest.setDurable(false);
+				client.sendMessage(replayRequest);
 				replayRequestSent = true;
 			}
 			client.sendMessage(message);
 		}
-		messageLog.logMessage(message);
+		if(message.isDurable()) {
+			messageLog.logMessage(message);
+		}
 	}
 
 	public int getId() {

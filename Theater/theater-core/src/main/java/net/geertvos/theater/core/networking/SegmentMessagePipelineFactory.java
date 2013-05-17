@@ -1,6 +1,6 @@
 package net.geertvos.theater.core.networking;
 
-import net.geertvos.theater.api.partitioning.SegmentManager;
+import net.geertvos.theater.api.segmentation.SegmentManager;
 
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;

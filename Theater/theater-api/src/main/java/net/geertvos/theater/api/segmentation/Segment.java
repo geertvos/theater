@@ -1,4 +1,4 @@
-package net.geertvos.theater.api.partitioning;
+package net.geertvos.theater.api.segmentation;
 
 import net.geertvos.theater.api.messaging.Message;
 
