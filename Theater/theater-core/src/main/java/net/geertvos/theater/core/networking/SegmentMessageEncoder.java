@@ -22,6 +22,8 @@ import com.esotericsoftware.kryo.io.Output;
  */
 public class SegmentMessageEncoder extends OneToOneEncoder {
 
+	//Buffer size is chosen so small messages will fit.
+	private static final int BUFFER_SIZE = 512;
 	private final ObjectPool<Kryo> kryoPool;
 	
 	public SegmentMessageEncoder() {
@@ -44,10 +46,11 @@ public class SegmentMessageEncoder extends OneToOneEncoder {
 	public Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
 		Kryo kryo = kryoPool.borrowObject();
 		SegmentMessage pm = (SegmentMessage)msg;
-        Output out = new Output(4096, Integer.MAX_VALUE);
+        Output out = new Output(BUFFER_SIZE, Integer.MAX_VALUE);
         kryo.writeObject(out, pm);
         kryoPool.returnObject(kryo);
-        return ChannelBuffers.wrappedBuffer(out.getBuffer());
+        byte[] data = out.toBytes();
+        return ChannelBuffers.wrappedBuffer(data);
 	}
 
 }

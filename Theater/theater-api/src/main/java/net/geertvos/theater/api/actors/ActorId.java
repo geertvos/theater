@@ -6,6 +6,10 @@ public interface ActorId {
 
 	UUID getId();
 	
+	String getType();
+	
+	String getSystem();
+	
 	String getCluster();
 	
 }

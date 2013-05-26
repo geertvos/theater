@@ -2,18 +2,22 @@ package net.geertvos.theater.core.actor;
 
 import java.util.UUID;
 
-import org.codehaus.jackson.annotate.JsonProperty;
-
 import net.geertvos.theater.api.actors.ActorId;
 
 public class ActorIdImpl implements ActorId {
 
+	private static final String format = "theater/%s/%s/%s/%s";
+	
 	private UUID id;
 	private String cluster;
+	private String type;
+	private String system;
 
-	public ActorIdImpl(@JsonProperty("id")UUID id, @JsonProperty("cluster") String cluster) {
+	public ActorIdImpl(String cluster, String system, String type, UUID id) {
 		this.id = id;
 		this.cluster = cluster;
+		this.system = system;
+		this.type = type;
 	}
 	
 	public ActorIdImpl() {
@@ -28,7 +32,31 @@ public class ActorIdImpl implements ActorId {
 	}
 
 	public String toString() {
-		return id+"@"+cluster;
+		return String.format(format, cluster, system, type, id.toString());
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public void setCluster(String cluster) {
+		this.cluster = cluster;
+	}
+
+	public String getType() {
+		return this.type;
+	}
+
+	public String getSystem() {
+		return this.system;
+	}
+	
+	public void setType(String type) {
+		this.type = type;
+	}
+	
+	public void setSystem(String system) {
+		this.system = system;
 	}
 
 	@Override
@@ -37,6 +65,8 @@ public class ActorIdImpl implements ActorId {
 		int result = 1;
 		result = prime * result + ((cluster == null) ? 0 : cluster.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((system == null) ? 0 : system.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
 
@@ -59,15 +89,17 @@ public class ActorIdImpl implements ActorId {
 				return false;
 		} else if (!id.equals(other.id))
 			return false;
+		if (system == null) {
+			if (other.system != null)
+				return false;
+		} else if (!system.equals(other.system))
+			return false;
+		if (type == null) {
+			if (other.type != null)
+				return false;
+		} else if (!type.equals(other.type))
+			return false;
 		return true;
-	}
-
-	public void setId(UUID id) {
-		this.id = id;
-	}
-
-	public void setCluster(String cluster) {
-		this.cluster = cluster;
 	}
 	
 }

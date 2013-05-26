@@ -2,9 +2,8 @@ package net.geertvos.theater.core.networking;
 
 import java.io.IOException;
 
-import net.geertvos.theater.api.segmentation.Segment;
-import net.geertvos.theater.api.segmentation.SegmentManager;
-import net.geertvos.theater.core.segmentation.LocalSegment;
+import net.geertvos.theater.api.management.ActorSystem;
+import net.geertvos.theater.api.management.Theater;
 
 import org.apache.log4j.Logger;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -15,22 +14,17 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 public class SegmentMessageHandler extends SimpleChannelHandler {
 
 	private Logger log = Logger.getLogger(SegmentMessageHandler.class);
-	private final SegmentManager manager;
+	private final Theater actorCluster;
 	
-	public SegmentMessageHandler(SegmentManager manager) {
-		this.manager = manager;
+	public SegmentMessageHandler(Theater manager) {
+		this.actorCluster = manager;
 	}
 	
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
 		SegmentMessage message = (SegmentMessage) e.getMessage();
-		Segment partition = manager.findSegmentForActor(message.getTo());
-		if(partition instanceof LocalSegment) {
-			partition.handleMessage(message);
-		} else {
-			//reply with error
-			log.error("Receiving a message for a partition that is no longer on this host.");
-		}
+		ActorSystem system = actorCluster.getActorSystem(message.getTo().getSystem());
+		system.handleMessage(message);
 	}
 
 	@Override
@@ -38,7 +32,7 @@ public class SegmentMessageHandler extends SimpleChannelHandler {
 		if(e.getCause() instanceof IOException) {
 			//ignore for now, we need to handle failed connections later.
 		} else {
-			e.getCause().printStackTrace();
+			log.error(e);
 		}
 	}
 	

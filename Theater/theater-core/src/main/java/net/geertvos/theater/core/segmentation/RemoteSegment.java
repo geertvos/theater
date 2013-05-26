@@ -60,11 +60,12 @@ public class RemoteSegment implements Segment {
 	public void onInit() {
 		client = new SegmentClient(clusterMember.getHost(), port);
 		operational = true;
+		client.start();
 	}
 
 	public void onDestroy() {
 		if(operational) {
-			client.disconnect();
+			client.stop();
 		}
 		operational = false;
 		replayRequestSent = false;

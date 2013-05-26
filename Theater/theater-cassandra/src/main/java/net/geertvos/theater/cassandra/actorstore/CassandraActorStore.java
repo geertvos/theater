@@ -1,23 +1,34 @@
 package net.geertvos.theater.cassandra.actorstore;
 
-import net.geertvos.theater.api.actors.Actor;
-import net.geertvos.theater.api.actors.ActorId;
-import net.geertvos.theater.api.actorstore.ActorStore;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class CassandraActorStore implements ActorStore {
+import net.geertvos.theater.api.actors.ActorId;
+import net.geertvos.theater.api.actorstore.ActorStateStore;
+
+public class CassandraActorStore implements ActorStateStore {
 
 	private CassandraActorDao dao;
+	private Map<ActorId,Object> stateCache = new ConcurrentHashMap<ActorId, Object>();
 	
 	public CassandraActorStore(CassandraActorDao dao) {
 		this.dao = dao;
 	}
 	
-	public void writeActor(int partition, Actor actor) {
-		dao.write(partition, actor);
+	public Object readActorState(int partition, ActorId actorId) {
+		Object state = stateCache.get(actorId);
+		if(state != null) {
+			return state;
+		}
+		state = dao.read(partition, actorId.getId());
+		return state;
 	}
 
-	public Actor readActor(int partition, ActorId actorId) {
-		return dao.read(partition, actorId.getId());
+	public void writeActorState(int partition, ActorId actorId,	Object actorState) {
+		if(actorState != null) {
+			dao.write(partition, actorId, actorState);
+			stateCache.put(actorId, actorState);
+		}
 	}
 
 }

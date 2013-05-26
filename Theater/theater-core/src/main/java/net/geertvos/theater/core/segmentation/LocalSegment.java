@@ -5,38 +5,42 @@ import java.util.UUID;
 
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorId;
-import net.geertvos.theater.api.actorstore.ActorStore;
+import net.geertvos.theater.api.actorstore.ActorStateStore;
 import net.geertvos.theater.api.durability.MessageLog;
-import net.geertvos.theater.api.factory.ActorFactory;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.segmentation.Segment;
-import net.geertvos.theater.core.durability.NoopMessageLog;
+import net.geertvos.theater.api.serialization.Deserializer;
+import net.geertvos.theater.core.networking.SegmentMessageTypes;
 import net.geertvos.theater.core.util.ThreadBoundExecutorService;
 import net.geertvos.theater.core.util.ThreadBoundRunnable;
+import net.geertvos.theater.kryo.serialization.KryoSerializer;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 
 public class LocalSegment implements Segment {
 
 	private final Logger LOG = Logger.getLogger(LocalSegment.class);
 	private volatile boolean operational;
-	private final ActorStore store;
-	private final ActorFactory factory;
+	private final ActorStateStore store;
+	private final SegmentActorSystem actorSystem;
 	private final int id;
 	private final MessageLog log;
 	private final ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executorService;
 	private final UUID uniqueSegmentIdentifier = UUID.randomUUID();
+	private final Deserializer deserializer;
 	
-	public LocalSegment(int id, ActorFactory factory, ActorStore store, MessageLog log,ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor) {
-		this.id = id;
-		this.store = store;
-		this.factory = factory;
-		this.log = log;
-		executorService = executor;
+	public LocalSegment(int id, SegmentActorSystem actorSystem, ActorStateStore store, MessageLog log,ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor) {
+		this(id, actorSystem, store, log, executor, new KryoSerializer());
 	}
 
-	public LocalSegment(int id, ActorFactory factory, ActorStore store) {
-		this(id,factory,store,new NoopMessageLog(), new ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID>(2));
+	public LocalSegment(int id, SegmentActorSystem actorSystem, ActorStateStore store, MessageLog log,ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor, Deserializer deserializer) {
+		this.id = id;
+		this.store = store;
+		this.actorSystem = actorSystem;
+		this.log = log;
+		executorService = executor;
+		this.deserializer = deserializer;
 	}
 
 	public void handleMessage(final Message message) {
@@ -44,13 +48,17 @@ public class LocalSegment implements Segment {
 		ThreadBoundRunnable<UUID> handleMessage = new ThreadBoundRunnable<UUID>() {
 
 			public void run() {
-				if(operational && message.getFrom() == null && message.getType() == 1) {
+				int type = message.getType();
+				if(type == SegmentMessageTypes.LOG_REPLAY.ordinal() && operational) {
 					UUID upTo = UUID.fromString(message.getParameter("messageId"));
 					replayLog(upTo);
 					return;
+				} else if(type == SegmentMessageTypes.ACTOR_MESSAGE.ordinal()) {
+					log.logMessage(message);
+					doHandleMessage(message);
+				} else {
+					LOG.warn("Segment Message type "+type+" is not supported.");
 				}
-				log.logMessage(message);
-				doHandleMessage(message);
 			}
 
 			public UUID getKey() {
@@ -66,17 +74,27 @@ public class LocalSegment implements Segment {
 			ThreadBoundRunnable<UUID> handleMessage = new ThreadBoundRunnable<UUID>() {
 
 				public void run() {
+					//TODO: create a payload decoder
+					Object decodedMessage = null;
+					String data = message.getParameter("payload");
+					if(data != null) {
+						byte[] bytes = Base64.decodeBase64(data);
+						decodedMessage = deserializer.deserialize(bytes);
+					} else {
+						LOG.warn("Received message without payload.");
+					}
 					ActorId actorId = message.getTo();
-					Actor actor = store.readActor(id, actorId);
-					if(actor == null) {
-						actor = factory.createActor(message);
-						actor.onCreate();
+					Actor actor = actorSystem.getActor(actorId);
+					Object actorState = store.readActorState(id, actorId);
+					if(actorState == null) {
+						actorState = actor.onCreate(actorId);
 					}
 					if(actor != null) {
-						actor.onActivate();
+						actor.onActivate(actorId, actorState);
+						actor.handleMessage(actorId, message.getFrom(), decodedMessage, actorState);
 						//TODO: remove the write here
-						actor.handleMessage(message);
-						store.writeActor(id, actor);
+						actor.onDeactivate(actorId, actorState);
+						store.writeActorState(id, actorId, actorState);
 						log.ackMessage(message);
 					}
 				}

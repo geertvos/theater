@@ -13,7 +13,12 @@ import me.prettyprint.cassandra.service.template.ColumnFamilyUpdater;
 import me.prettyprint.cassandra.service.template.ThriftColumnFamilyTemplate;
 import me.prettyprint.hector.api.Keyspace;
 import net.geertvos.theater.api.messaging.Message;
+import net.geertvos.theater.core.actor.ActorIdImpl;
+import net.geertvos.theater.core.networking.SegmentMessage;
 
+import org.apache.commons.pool.BasePoolableObjectFactory;
+import org.apache.commons.pool.PoolableObjectFactory;
+import org.apache.commons.pool.impl.StackObjectPool;
 import org.testng.log4testng.Logger;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -21,23 +26,29 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class CassandraMessageLogDao<T> {
+public class CassandraMessageLogDao {
 
 	private Logger log = Logger.getLogger(CassandraMessageLogDao.class);
-
-	private static final int CLASS_IDENTIFIER = 100;
-	
 	private final ColumnFamilyTemplate<Integer, UUID> template;
-	private final Kryo kryo;
-	private final Output out = new Output(1,Integer.MAX_VALUE);
-	private final Class<T> messageClass;
+
+	private StackObjectPool<Kryo> kryoPool;
 	
-	public CassandraMessageLogDao(Keyspace ksp, String columnFamily, Class<T> messageClass) {
-		this.messageClass = messageClass;
-		kryo = new Kryo();
-		kryo.register(messageClass, CLASS_IDENTIFIER);
-		kryo.addDefaultSerializer(UUID.class, new net.geertvos.theater.core.serialization.UUIDSerializer());
+	public CassandraMessageLogDao(Keyspace ksp, String columnFamily) {
 		template = new ThriftColumnFamilyTemplate<Integer, UUID>(ksp, columnFamily, IntegerSerializer.get(), UUIDSerializer.get());
+		
+		PoolableObjectFactory<Kryo> realFactory = new BasePoolableObjectFactory<Kryo>() {
+
+			@Override
+			public Kryo makeObject() throws Exception {
+				Kryo kryo = new Kryo();
+				kryo.register(SegmentMessage.class);
+				kryo.register(ActorIdImpl.class);
+				kryo.addDefaultSerializer(UUID.class, new net.geertvos.theater.core.serialization.UUIDSerializer());
+				return kryo;
+			}
+		};
+		kryoPool = new StackObjectPool<Kryo>(realFactory);
+
 	}
 
 	public void write(int segment, Message message) {
@@ -46,7 +57,7 @@ public class CassandraMessageLogDao<T> {
 		template.update(updater);
 	}
 	
-	public T read(int segment, UUID id) {
+	public Message read(int segment, UUID id) {
 		 ColumnFamilyResult<Integer, UUID> res = template.queryColumns(segment);
 		 try {
 			 return deserialize(res.getByteArray(id));
@@ -62,24 +73,40 @@ public class CassandraMessageLogDao<T> {
 	}
 	
 	private byte[] serialize(Message m) {
-		out.clear();
-		kryo.writeObject(out, m);
-		return out.getBuffer();
+		Output out = new Output(1,Integer.MAX_VALUE);
+		Kryo kryo;
+		try {
+			kryo = kryoPool.borrowObject();
+			kryo.writeClassAndObject(out, m);
+			kryoPool.returnObject(kryo);
+			return out.getBuffer();
+		} catch(Exception e) {
+			log.error("Unable to serialize message.", e);
+		}
+		return null;
 	}
 	
-	private T deserialize(byte[] data) {
+	private Message deserialize(byte[] data) {
 		Input in = new Input(data);
-		return kryo.readObject(in, messageClass);
+		try {
+			Kryo kryo = kryoPool.borrowObject();
+			Message m = (Message) kryo.readClassAndObject(in);
+			kryoPool.returnObject(kryo);
+			return m;
+		} catch (Exception e) {
+			log.error("Unable to deserialize message.", e);
+		}
+		return null;
 	}
 
-	public List<T> getSegment(int segment) {
+	public List<Message> getSegment(int segment) {
 		HSlicePredicate<UUID> predicate = new HSlicePredicate<UUID>(UUIDSerializer.get());
 		predicate.setRange(null, null, false, Integer.MAX_VALUE);
 		ColumnFamilyResult<Integer, UUID> res = template.queryColumns(segment,predicate);
-		ArrayList<T> messages = new ArrayList<T>();
+		ArrayList<Message> messages = new ArrayList<Message>();
 		for(UUID column : res.getColumnNames()) {
 			try {
-				T m = deserialize(res.getByteArray(column));
+				Message m = deserialize(res.getByteArray(column));
 				messages.add(m);
 			} catch(KryoException e) {
 				log.error("Deserialization of message failed, deleting.",e);

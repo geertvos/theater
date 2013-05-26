@@ -1,9 +1,10 @@
 package net.geertvos.theater.core.segmentation;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -11,58 +12,62 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.geertvos.gossip.api.cluster.Cluster;
 import net.geertvos.gossip.api.cluster.ClusterEventListener;
 import net.geertvos.gossip.api.cluster.ClusterMember;
+import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorId;
+import net.geertvos.theater.api.actorstore.ActorStateStore;
+import net.geertvos.theater.api.durability.MessageLog;
+import net.geertvos.theater.api.durability.SegmentMessageLogFactory;
 import net.geertvos.theater.api.hashing.ConsistentHashFunction;
+import net.geertvos.theater.api.management.ActorSystem;
+import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.api.segmentation.SegmentManager;
-import net.geertvos.theater.core.hashing.FakeHashFunction;
+import net.geertvos.theater.core.hashing.Md5HashFunction;
+import net.geertvos.theater.core.util.ThreadBoundExecutorService;
+import net.geertvos.theater.core.util.ThreadBoundRunnable;
 
 import org.apache.log4j.Logger;
 
 import com.esotericsoftware.minlog.Log;
 
-public class ClusteredSegmentManager implements SegmentManager, ClusterEventListener {
+public class SegmentActorSystem implements ActorSystem, SegmentManager, ClusterEventListener {
 
-	private Logger logger = Logger.getLogger(ClusteredSegmentManager.class);
+	private Logger logger = Logger.getLogger(SegmentActorSystem.class);
+	private final ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor = new ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID>(10);
 	
 	private final Cluster cluster;
-	private final LocalSegmentFactory localSegmentFactory;
-	private final RemoteSegmentFactory remoteSegmentFactory;
-	
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	private final Lock readLock = lock.readLock();
 	private final Lock writeLock = lock.writeLock();
 	
 	private final int numberOfSegments;
 	private final List<Segment> segments;
+	private final ActorStateStore store;
+	private final SegmentMessageLogFactory messageLogFactory;
+	private final Map<String,Actor> actors = new HashMap<String,Actor>();
+
+	private ConsistentHashFunction hashFunction =  new Md5HashFunction();
 	
-	private ConsistentHashFunction hashFunction =  new FakeHashFunction();
-	
-	private CountDownLatch initLatch = new CountDownLatch(1);
-	
-	public ClusteredSegmentManager(int numberOfSegments, Cluster cluster, LocalSegmentFactory localSegmentFactory, RemoteSegmentFactory remoteSegmentFactory) {
+	public SegmentActorSystem(SegmentMessageLogFactory factory, ActorStateStore store, int numberOfSegments, Cluster cluster) {
+		this.messageLogFactory = factory;
+		this.store = store;
 		this.numberOfSegments = numberOfSegments;
 		this.cluster = cluster;
 		this.cluster.getEventService().registerListener(this);
 		this.segments = new LinkedList<Segment>();
-		this.localSegmentFactory = localSegmentFactory;
-		this.remoteSegmentFactory = remoteSegmentFactory;
 		for(int i=0;i<numberOfSegments;i++) {
-			Segment p = localSegmentFactory.createSegment(i);
+			MessageLog log = factory.createLog(i);
+			Segment p = new LocalSegment(i, this, store, log, executor);
 			segments.add(p);
 		}
 	}
 
 	public Segment findSegmentForActor(ActorId actor) {
 		try {
-			initLatch.await();
 			int hash = hash(actor.getId());
 			int partition = hash % numberOfSegments;
 			readLock.lock();
 			return segments.get(partition);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			throw new IllegalStateException("SegmentManager not initialized properly.");
 		} finally {
 			readLock.unlock();
 		}
@@ -105,7 +110,6 @@ public class ClusteredSegmentManager implements SegmentManager, ClusterEventList
 		} catch(Exception e) {
 			Log.error("Error while updating segment distribution",e);
 		} finally {
-			initLatch.countDown();
 			writeLock.unlock();
 		}
 	}
@@ -136,7 +140,7 @@ public class ClusteredSegmentManager implements SegmentManager, ClusterEventList
 		logger.info("Segment "+i+" relocates to remote cluster member "+member.getId());
 		current.onDestroy();
 		logger.debug("Segment "+i+" destroyed.");
-		RemoteSegment newSegment = remoteSegmentFactory.createSegment(i, member);
+		RemoteSegment newSegment = new RemoteSegment(i, member);
 		segments.remove(i);
 		segments.add(i, newSegment);
 	}
@@ -150,7 +154,8 @@ public class ClusteredSegmentManager implements SegmentManager, ClusterEventList
 		logger.info("Segment "+i+" relocates to local cluster member");
 		current.onDestroy();
 		logger.debug("Segment "+i+" destroyed.");
-		LocalSegment newSegment = localSegmentFactory.createSegment(i);
+		MessageLog log = messageLogFactory.createLog(i);
+		LocalSegment newSegment = new LocalSegment(i, this, store, log, executor);
 		segments.remove(i);
 		segments.add(i, newSegment);
 	}
@@ -170,6 +175,18 @@ public class ClusteredSegmentManager implements SegmentManager, ClusterEventList
 
 	public void setHashFunction(ConsistentHashFunction hashFunction) {
 		this.hashFunction = hashFunction;
+	}
+
+	public void handleMessage(Message message) {
+		findSegmentForActor(message.getTo()).handleMessage(message);
+	}
+
+	public Actor getActor(ActorId actorId) {
+		return actors.get(actorId.getType());
+	}
+
+	public void registerActor(Actor actor, String type) {
+		actors.put(type,actor);
 	}
 
 }

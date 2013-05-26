@@ -14,6 +14,11 @@
   		<version>${project.version}</version>
   	</dependency>
   	<dependency>
+  		<groupId>net.geertvos.theater</groupId>
+  		<artifactId>theater-kryo</artifactId>
+  		<version>${project.version}</version>
+  	</dependency>
+  	<dependency>
   		<artifactId>gossip-api</artifactId>
 		<groupId>net.geertvos</groupId>
 		<version>0.0.1-SNAPSHOT</version>
@@ -54,6 +59,16 @@
 		<artifactId>kryo</artifactId>
 		<version>${kryo.version}</version>
 	</dependency>
-            
+	<dependency>
+		<groupId>com.google.guava</groupId>
+		<artifactId>guava</artifactId>
+		<version>${guava.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>cglib</groupId>
+		<artifactId>cglib</artifactId>
+		<version>${cglib.version}</version>
+	</dependency>
+                        
   </dependencies>
 </project>

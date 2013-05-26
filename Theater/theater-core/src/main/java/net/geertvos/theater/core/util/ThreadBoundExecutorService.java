@@ -30,7 +30,6 @@ public class ThreadBoundExecutorService<T extends ThreadBoundRunnable<U>, U> {
 	}
 
 	private int hash(U key) {
-		//TODO: Implement a better hash algo
 		return key.hashCode();
 	}
 	
