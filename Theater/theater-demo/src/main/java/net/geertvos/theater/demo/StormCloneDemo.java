@@ -51,7 +51,7 @@ public class StormCloneDemo {
 		}
 		
 		//Cassandra setup
-		Cluster myCluster = HFactory.getOrCreateCluster("Geert Cluster", "localhost:9160");
+		Cluster myCluster = HFactory.getOrCreateCluster("Geert Cluster", "192.168.5.104:9160");
 		ColumnFamilyDefinition cfDef = HFactory.createColumnFamilyDefinition(THEATER_KEYSPACE, MESSAGE_LOG_COLUMNFAMILIY, ComparatorType.BYTESTYPE);
 		ColumnFamilyDefinition actorStoreDef = HFactory.createColumnFamilyDefinition(THEATER_KEYSPACE, ACTOR_STORE_COLUMNFAMILIY, ComparatorType.BYTESTYPE);
 		KeyspaceDefinition newKeyspace = HFactory.createKeyspaceDefinition(THEATER_KEYSPACE, ThriftKsDef.DEF_STRATEGY_CLASS, 1, Arrays.asList(cfDef,actorStoreDef));
@@ -81,16 +81,17 @@ public class StormCloneDemo {
 				return new CassandraMessageLog(segment, messageLogDao);
 			}
 		};
-		final SegmentActorSystem segmentedActorSystem = new SegmentActorSystem(logFactory,store,8,cluster);
 		final Theater theater = new TheaterImpl();
 		final SegmentMessageSender sender = new SegmentMessageSender(theater);
 
-		theater.registerActorSystem("segmented", segmentedActorSystem);
+		final SegmentActorSystem segmentedActorSystem = new SegmentActorSystem(logFactory,store,80,cluster);
 		segmentedActorSystem.registerActor(new LineSpout(sender), "linesprout");
 		segmentedActorSystem.registerActor(new WordCountBolt(sender), "wordcountbolt");
 
 		ActorSystem temporarySystem = new TemporaryActorSystem(cluster);
 		temporarySystem.registerActor(new EchoActor(), "echo");
+
+		theater.registerActorSystem("segmented", segmentedActorSystem);
 		theater.registerActorSystem("temp", temporarySystem);
 		
 		final TheaterServer segmentServer = new TheaterServer("localhost", 5000+number, theater);

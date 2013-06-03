@@ -24,8 +24,7 @@ public class EchoActor implements Actor {
 
 	}
 
-	public void handleMessage(ActorId actor, ActorId from, Object message,
-			Object actorState) {
+	public void handleMessage(ActorId actor, ActorId from, Object message, Object actorState) {
 		System.out.println("I received: "+message.toString());
 
 	}

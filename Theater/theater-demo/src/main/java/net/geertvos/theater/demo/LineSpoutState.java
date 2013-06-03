@@ -1,7 +1,5 @@
 package net.geertvos.theater.demo;
 
-import java.util.List;
-import java.util.UUID;
 
 public class LineSpoutState {
 

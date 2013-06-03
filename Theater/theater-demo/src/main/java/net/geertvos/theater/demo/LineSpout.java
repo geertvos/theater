@@ -13,7 +13,7 @@ import net.geertvos.theater.core.actor.temp.TempActorId;
 
 public class LineSpout extends AbstractActorAdapter {
 
-	private static final int MSGS_COUNT = 60;
+	private static final int MSGS_COUNT = 6000;
 	private static final int WORKER_COUNT = 10;
 
 	private MessageSender sender;
