@@ -50,6 +50,7 @@ public class LocalSegment implements Segment {
 			public void run() {
 				int type = message.getType();
 				if(type == SegmentMessageTypes.LOG_REPLAY.ordinal() && operational) {
+					LOG.info("Processing local message: "+message);
 					UUID upTo = UUID.fromString(message.getParameter("messageId"));
 					replayLog(upTo);
 					return;
@@ -69,33 +70,34 @@ public class LocalSegment implements Segment {
 	}
 	
 	private void doHandleMessage(final Message message) {
-		if(operational) {
 			
 			ThreadBoundRunnable<UUID> handleMessage = new ThreadBoundRunnable<UUID>() {
 
 				public void run() {
-					//TODO: create a payload decoder
-					Object decodedMessage = null;
-					String data = message.getParameter("payload");
-					if(data != null) {
-						byte[] bytes = Base64.decodeBase64(data);
-						decodedMessage = deserializer.deserialize(bytes);
-					} else {
-						LOG.warn("Received message without payload.");
-					}
-					ActorId actorId = message.getTo();
-					Actor actor = actorSystem.getActor(actorId);
-					Object actorState = store.readActorState(id, actorId);
-					if(actorState == null) {
-						actorState = actor.onCreate(actorId);
-					}
-					if(actor != null) {
-						actor.onActivate(actorId, actorState);
-						actor.handleMessage(actorId, message.getFrom(), decodedMessage, actorState);
-						//TODO: remove the write here
-						actor.onDeactivate(actorId, actorState);
-						store.writeActorState(id, actorId, actorState);
-						log.ackMessage(message);
+					if(operational) {
+						//TODO: create a payload decoder
+						Object decodedMessage = null;
+						String data = message.getParameter("payload");
+						if(data != null) {
+							byte[] bytes = Base64.decodeBase64(data);
+							decodedMessage = deserializer.deserialize(bytes);
+						} else {
+							LOG.warn("Received message without payload.");
+						}
+						ActorId actorId = message.getTo();
+						Actor actor = actorSystem.getActor(actorId);
+						Object actorState = store.readActorState(id, actorId);
+						if(actorState == null) {
+							actorState = actor.onCreate(actorId);
+						}
+						if(actor != null) {
+							actor.onActivate(actorId, actorState);
+							actor.handleMessage(actorId, message.getFrom(), decodedMessage, actorState);
+							//TODO: remove the write here
+							actor.onDeactivate(actorId, actorState);
+							store.writeActorState(id, actorId, actorState);
+							log.ackMessage(message);
+						}
 					}
 				}
 
@@ -104,7 +106,6 @@ public class LocalSegment implements Segment {
 				}
 			};
 			executorService.submit(handleMessage);
-		}
 	}
 
 	public int getId() {
@@ -133,6 +134,9 @@ public class LocalSegment implements Segment {
 			LOG.info("Replaying "+unacked.size()+" messages for segment "+id);
 		}
 		for(Message message : unacked) {
+			if(upTo!=null && !(message.getMessageId().compareTo(upTo) < 0)) {
+				System.out.println("Got a replay message, older then current log.");
+			}
 			if(upTo==null || message.getMessageId().compareTo(upTo) < 0) {
 				if(message.getType()!=1) {
 					doHandleMessage(message);

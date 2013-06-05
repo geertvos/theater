@@ -23,6 +23,7 @@ public class SegmentMessageHandler extends SimpleChannelHandler {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
 		SegmentMessage message = (SegmentMessage) e.getMessage();
+		log.info("Received a segment message from "+message.getFrom());
 		ActorSystem system = actorCluster.getActorSystem(message.getTo().getSystem());
 		system.handleMessage(message);
 	}

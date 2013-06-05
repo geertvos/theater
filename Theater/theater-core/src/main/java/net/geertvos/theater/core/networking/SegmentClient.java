@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.geertvos.theater.api.messaging.Message;
 
+import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.testng.log4testng.Logger;
 
 public class SegmentClient {
 
@@ -69,9 +69,20 @@ public class SegmentClient {
 							public void operationComplete(ChannelFuture future) throws Exception {
 								if(future.isSuccess()) {
 									log.debug("Writing message: "+message.toString());
-									future.getChannel().write(message);
+									future.getChannel().write(message).addListener(new ChannelFutureListener() {
+										
+										public void operationComplete(ChannelFuture future) throws Exception {
+											if(future.isSuccess()) {
+												log.debug("Transmitted message: "+message.toString());
+											} else {
+												log.debug("Failed to transmit message.");
+												connected.set(false);
+											}
+										}
+									});
 								} else {
 									log.error("Unable to send message.", future.getCause());
+									connected.set(false);
 								}
 							}
 						});

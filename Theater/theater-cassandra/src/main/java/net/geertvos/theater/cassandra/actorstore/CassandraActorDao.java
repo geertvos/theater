@@ -2,6 +2,8 @@ package net.geertvos.theater.cassandra.actorstore;
 
 import java.util.UUID;
 
+import org.testng.log4testng.Logger;
+
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.UUIDSerializer;
 import me.prettyprint.cassandra.service.template.ColumnFamilyResult;
@@ -17,6 +19,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 public class CassandraActorDao {
 
+	private static final Logger LOG = Logger.getLogger(CassandraActorDao.class);
 	private final ColumnFamilyTemplate<Integer, UUID> template;
 	private final Kryo kryo;
 	private final Output out = new Output(1,Integer.MAX_VALUE);
@@ -38,7 +41,12 @@ public class CassandraActorDao {
 		 if(res.hasResults()) {
 			 byte[] data = res.getByteArray(id);
 			 if(data != null) {
-				 return deserialize(res.getByteArray(id));
+				 try {
+					 return deserialize(res.getByteArray(id)); 
+				 } catch(Exception e) {
+					 LOG.error("Unable to deserialize actor "+id, e);
+					 return null;
+				 }
 			 }
 		 }
 		 return null;
