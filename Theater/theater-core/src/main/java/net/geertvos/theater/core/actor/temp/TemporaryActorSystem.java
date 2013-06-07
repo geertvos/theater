@@ -15,6 +15,7 @@ import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.serialization.Deserializer;
+import net.geertvos.theater.core.networking.PooledSegmentClient;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.kryo.serialization.KryoSerializer;
 
@@ -33,9 +34,10 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 	private String clusterId;
 	private final Deserializer deserializer = new KryoSerializer();
 	
-	private final ConcurrentHashMap<String, SegmentClient> clients = new ConcurrentHashMap<String, SegmentClient>();
+	private final PooledSegmentClient clients;
 
-	public TemporaryActorSystem(Cluster cluster) {
+	public TemporaryActorSystem(Cluster cluster, PooledSegmentClient clients) {
+		this.clients = clients;
 		this.clusterId = cluster.getLocalMember().getId();
 		cluster.getEventService().registerListener(this);
 	}
@@ -87,8 +89,7 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 				//send
 				String host = member.getHost();
 				int port = Integer.parseInt(member.getMetaData("segmentServer.port"));
-				String key = host+"/"+port;
-				SegmentClient client = clients.get(key);
+				SegmentClient client = clients.getClient(host, port);
 				if(client != null) {
 					client.sendMessage(message);
 					sent = true;
@@ -124,23 +125,13 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 	private void ensureClientExists(ClusterMember member) {
 		String host = member.getHost();
 		int port = Integer.parseInt(member.getMetaData("segmentServer.port"));
-		String key = host+"/"+port;
-		if(!clients.contains(key)) {
-			SegmentClient client = new SegmentClient(host, port);
-			client.start();
-			clients.put(key, client);
-		}
+		clients.getClient(host, port);
 	}
 	
 	public void onMemberDeactivated(ClusterMember member, List<ClusterMember> members) {
 		String host = member.getHost();
 		int port = Integer.parseInt(member.getMetaData("segmentServer.port"));
 		String key = host+"/"+port;
-		SegmentClient client = clients.get(key);
-		if(client != null) {
-			client.stop();
-			clients.remove(key);
-		}
 	}
 	
 	public void onClusterDestabilized(List<ClusterMember> members) {}

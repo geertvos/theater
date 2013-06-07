@@ -7,6 +7,7 @@ import net.geertvos.theater.api.durability.MessageLog;
 import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.core.durability.NoopMessageLog;
+import net.geertvos.theater.core.networking.PooledSegmentClient;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.core.networking.SegmentMessage;
 
@@ -19,20 +20,21 @@ public class RemoteSegment implements Segment {
 	private final ClusterMember clusterMember;
 	private final int id;
 	private final int port;
-	private SegmentClient client;
+	private final SegmentClient client;
 	private final MessageLog messageLog;
 	private volatile boolean operational = false;
 	private volatile boolean replayRequestSent = false;
 	
-	public RemoteSegment(int id, ClusterMember clusterMember, MessageLog messageLog) {
+	public RemoteSegment(int id, ClusterMember clusterMember, MessageLog messageLog, PooledSegmentClient clients) {
 		this.id = id;
 		this.clusterMember = clusterMember;
 		this.port = Integer.parseInt(clusterMember.getMetaData("segmentServer.port"));
 		this.messageLog = messageLog;
+		this.client = clients.getClient(clusterMember.getHost(), port);
 	}
 
-	public RemoteSegment(int id, ClusterMember clusterMember) {
-		this(id,clusterMember,new NoopMessageLog());
+	public RemoteSegment(int id, ClusterMember clusterMember, PooledSegmentClient client) {
+		this(id,clusterMember,new NoopMessageLog(), client);
 	}
 
 	public void handleMessage(Message message) {
@@ -58,15 +60,11 @@ public class RemoteSegment implements Segment {
 	}
 
 	public void onInit() {
-		client = new SegmentClient(clusterMember.getHost(), port);
 		operational = true;
 		client.start();
 	}
 
 	public void onDestroy() {
-		if(operational) {
-			client.stop();
-		}
 		operational = false;
 		replayRequestSent = false;
 	}

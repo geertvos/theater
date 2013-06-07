@@ -23,6 +23,7 @@ import net.geertvos.theater.api.messaging.Message;
 import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.api.segmentation.SegmentManager;
 import net.geertvos.theater.core.hashing.Md5HashFunction;
+import net.geertvos.theater.core.networking.PooledSegmentClient;
 import net.geertvos.theater.core.util.ThreadBoundExecutorService;
 import net.geertvos.theater.core.util.ThreadBoundRunnable;
 
@@ -45,16 +46,18 @@ public class SegmentActorSystem implements ActorSystem, SegmentManager, ClusterE
 	private final ActorStateStore store;
 	private final SegmentMessageLogFactory messageLogFactory;
 	private final Map<String,Actor> actors = new HashMap<String,Actor>();
+	private final PooledSegmentClient pooledClient;
 
 	private ConsistentHashFunction hashFunction =  new Md5HashFunction();
 	
-	public SegmentActorSystem(SegmentMessageLogFactory factory, ActorStateStore store, int numberOfSegments, Cluster cluster) {
+	public SegmentActorSystem(SegmentMessageLogFactory factory, ActorStateStore store, int numberOfSegments, Cluster cluster, PooledSegmentClient clients) {
 		this.messageLogFactory = factory;
 		this.store = store;
 		this.numberOfSegments = numberOfSegments;
 		this.cluster = cluster;
 		this.cluster.getEventService().registerListener(this);
 		this.segments = new LinkedList<Segment>();
+		this.pooledClient = clients;
 		for(int i=0;i<numberOfSegments;i++) {
 			MessageLog log = factory.createLog(i);
 			Segment p = new LocalSegment(i, this, store, log, executor);
@@ -140,7 +143,7 @@ public class SegmentActorSystem implements ActorSystem, SegmentManager, ClusterE
 		logger.info("Segment "+i+" relocates to remote cluster member "+member.getId());
 		current.onDestroy();
 		logger.debug("Segment "+i+" destroyed.");
-		RemoteSegment newSegment = new RemoteSegment(i, member);
+		RemoteSegment newSegment = new RemoteSegment(i, member,pooledClient );
 		segments.remove(i);
 		segments.add(i, newSegment);
 	}

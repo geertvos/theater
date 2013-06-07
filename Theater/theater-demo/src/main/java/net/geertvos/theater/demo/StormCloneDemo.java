@@ -29,6 +29,7 @@ import net.geertvos.theater.core.actor.ActorIdImpl;
 import net.geertvos.theater.core.actor.temp.TemporaryActorSystem;
 import net.geertvos.theater.core.management.TheaterImpl;
 import net.geertvos.theater.core.messaging.SegmentMessageSender;
+import net.geertvos.theater.core.networking.PooledSegmentClient;
 import net.geertvos.theater.core.networking.TheaterServer;
 import net.geertvos.theater.core.segmentation.SegmentActorSystem;
 
@@ -43,6 +44,7 @@ public class StormCloneDemo {
 	
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
+		
 		int number = 1;
 		int knows = 2;
 		if(args.length == 2 ) {
@@ -84,11 +86,12 @@ public class StormCloneDemo {
 		final Theater theater = new TheaterImpl();
 		final SegmentMessageSender sender = new SegmentMessageSender(theater);
 
-		final SegmentActorSystem segmentedActorSystem = new SegmentActorSystem(logFactory,store,80,cluster);
+		final PooledSegmentClient clients = new PooledSegmentClient();
+		final SegmentActorSystem segmentedActorSystem = new SegmentActorSystem(logFactory,store,512,cluster,clients);
 		segmentedActorSystem.registerActor(new LineSpout(sender), "linesprout");
 		segmentedActorSystem.registerActor(new WordCountBolt(sender), "wordcountbolt");
 
-		ActorSystem temporarySystem = new TemporaryActorSystem(cluster);
+		ActorSystem temporarySystem = new TemporaryActorSystem(cluster,clients);
 		temporarySystem.registerActor(new EchoActor(), "echo");
 
 		theater.registerActorSystem("segmented", segmentedActorSystem);
@@ -99,6 +102,12 @@ public class StormCloneDemo {
 		
 		//Kick off the system by sending the first message
 		if(number == 1) {
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			final ActorId sproutId = new ActorIdImpl(CLUSTER, "segmented", "linesprout",UUID.randomUUID());
 			sender.sendMessage(null, sproutId, new CreateSprout());
 		}

@@ -30,26 +30,34 @@ public class SegmentClient {
 	public SegmentClient(String host, int port) {
 		this.port = port;
 		this.host = host;
-		clientBootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
+		clientBootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newFixedThreadPool(1), Executors.newFixedThreadPool(1)));
 		clientBootstrap.setPipelineFactory(new SegmentClientPipelineFactory());
 	}
 	
 	public void start() {
-		running.set(true);
-		connected.set(false);
-		Thread thread = new Thread(new Worker(), "Segment client.");
-		thread.start();
+		if(!running.get()) {
+			running.set(true);
+			connected.set(false);
+			Thread thread = new Thread(new Worker(), "Segment client.");
+			thread.start();
+		}
 	}
 
 	public void stop() {
-		running.set(false);
-		messageQueue.clear();
-		channelFuture.getChannel().close();
+		if(running.get()) {
+			running.set(false);
+			messageQueue.clear();
+			channelFuture.getChannel().close();
+		}
 	}
 	
 	public void sendMessage(final Message message) {
-		log.debug("Trying to send remote message: "+message.toString());
-		messageQueue.add(message);
+		if(running.get()) {
+			log.debug("Trying to send remote message: "+message.toString());
+			messageQueue.add(message);
+		} else {
+			throw new IllegalStateException("Trying to send a message, but the client is stopped.");
+		}
 	}
 
 	public void disconnect() {
