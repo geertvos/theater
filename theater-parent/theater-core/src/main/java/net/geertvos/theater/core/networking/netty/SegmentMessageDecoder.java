@@ -20,7 +20,7 @@ import com.esotericsoftware.kryo.io.Input;
  */
 public class SegmentMessageDecoder extends OneToOneDecoder {
 
-	private Kryo kryo;
+	private final Kryo kryo;
 	
 	public SegmentMessageDecoder() {
 		kryo = new Kryo();

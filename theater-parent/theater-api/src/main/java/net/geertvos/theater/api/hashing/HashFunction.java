@@ -1,6 +1,6 @@
 package net.geertvos.theater.api.hashing;
 
-public interface ConsistentHashFunction {
+public interface HashFunction {
 
 	int hash(String input);
 	

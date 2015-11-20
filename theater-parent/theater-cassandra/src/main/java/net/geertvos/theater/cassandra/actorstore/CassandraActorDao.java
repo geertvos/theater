@@ -12,7 +12,7 @@ import me.prettyprint.cassandra.service.template.ColumnFamilyUpdater;
 import me.prettyprint.cassandra.service.template.ThriftColumnFamilyTemplate;
 import me.prettyprint.hector.api.Keyspace;
 import net.geertvos.theater.api.actors.ActorHandle;
-import net.geertvos.theater.api.hashing.ConsistentHashFunction;
+import net.geertvos.theater.api.hashing.HashFunction;
 import net.geertvos.theater.core.hashing.Md5HashFunction;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -26,7 +26,7 @@ public class CassandraActorDao {
 	private final Kryo kryo;
 	private final Output out = new Output(1,Integer.MAX_VALUE);
 	private final int segmentCount;
-	private ConsistentHashFunction hashFunction =  new Md5HashFunction();
+	private HashFunction hashFunction =  new Md5HashFunction();
 
 	public CassandraActorDao(Keyspace ksp, String columnFamily, int segmentCount) {
 		this.segmentCount = segmentCount;

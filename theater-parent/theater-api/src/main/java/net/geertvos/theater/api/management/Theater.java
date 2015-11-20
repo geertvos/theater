@@ -1,13 +1,17 @@
 package net.geertvos.theater.api.management;
 
+import java.util.UUID;
+
 import net.geertvos.theater.api.actors.ActorHandle;
 
 public interface Theater {
 
-	ActorSystem getActorSystem(String id);
-	
-	void registerActorSystem(String id, ActorSystem system);
-
 	public void sendMessage(ActorHandle from, ActorHandle to, Object message);
+	
+	public ActorHandle getTempActor(Class type, UUID id);
+	
+	public ActorHandle getActor(Class type, UUID id);
+	
+	public ActorHandle getServiceActor(Class type, String service);
 	
 }

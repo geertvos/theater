@@ -69,6 +69,15 @@
 		<artifactId>cglib</artifactId>
 		<version>${cglib.version}</version>
 	</dependency>
-                        
+  	<dependency>
+  		<artifactId>gossip-api</artifactId>
+		<groupId>net.geertvos</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+  	<dependency>
+  		<artifactId>gossip-core</artifactId>
+		<groupId>net.geertvos</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
   </dependencies>
 </project>

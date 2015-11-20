@@ -1,5 +1,5 @@
 package net.geertvos.theater.demo;
 
-public class CreateSprout {
+public class CreateSproutMessage {
 
 }

@@ -1,19 +1,14 @@
 package net.geertvos.theater.demo;
 
-import java.util.UUID;
-
-import net.geertvos.theater.api.actors.ActorHandle;
-
-public class Line {
+public class LineMessage {
 
 	private String line;
 	private String id;
 	
-	public Line() {
-		
+	public LineMessage() {
 	}
 	
-	public Line(String id, String line) {
+	public LineMessage(String id, String line) {
 		this.id = id;
 		this.line = line;
 	}

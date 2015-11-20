@@ -1,9 +1,7 @@
 package net.geertvos.theater.core.segmentation;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -19,10 +17,12 @@ import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.api.actorstore.ActorStateStore;
-import net.geertvos.theater.api.hashing.ConsistentHashFunction;
+import net.geertvos.theater.api.hashing.HashFunction;
 import net.geertvos.theater.api.management.ActorSystem;
+import net.geertvos.theater.api.management.Theater;
 import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.api.segmentation.SegmentManager;
+import net.geertvos.theater.core.actor.AbstractActorAdapter;
 import net.geertvos.theater.core.hashing.Md5HashFunction;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.core.networking.SegmentClientFactory;
@@ -42,11 +42,12 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 	private final int numberOfSegments;
 	private final List<Segment> segments;
 	private final ActorStateStore store;
-	private final Map<String,Actor> actors = new HashMap<String,Actor>();
 	private final SegmentClientFactory clientFactory;
-	private ConsistentHashFunction hashFunction =  new Md5HashFunction();
+	private final Theater theater;
+	private HashFunction hashFunction =  new Md5HashFunction();
 	
-	public SegmentedActorSystem(ActorStateStore store, int numberOfSegments, Cluster cluster, SegmentClientFactory clientFactory) {
+	public SegmentedActorSystem(Theater theater, ActorStateStore store, int numberOfSegments, Cluster cluster, SegmentClientFactory clientFactory) {
+		this.theater = theater;
 		this.store = store;
 		this.numberOfSegments = numberOfSegments;
 		this.cluster = cluster;
@@ -171,16 +172,23 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 		
 	}
 
-	public void setHashFunction(ConsistentHashFunction hashFunction) {
+	public void setHashFunction(HashFunction hashFunction) {
 		this.hashFunction = hashFunction;
 	}
 
 	public Actor getActor(ActorHandle actorHandle) {
-		return actors.get(actorHandle.getType());
-	}
-
-	public void registerActor(Actor actor) {
-		actors.put(actor.getType(), actor);
+		try {
+			AbstractActorAdapter actor = (AbstractActorAdapter) Class.forName(actorHandle.getType()).newInstance();
+			actor.setTheater(theater);
+			return actor;
+		} catch(ClassNotFoundException e) {
+			Log.error("Trying to obtain reference to class: "+actorHandle.getType()+", but class not found.", e);
+		} catch (InstantiationException e) {
+			Log.error("Trying to obtain reference to class: "+actorHandle.getType()+", but could not instantiate.", e);
+		} catch (IllegalAccessException e) {
+			Log.error("Trying to obtain reference to class: "+actorHandle.getType()+", but got illegal access.", e);
+		}
+		return null;
 	}
 
 	public void handleMessage(ActorHandle from, ActorHandle to, Object message) {

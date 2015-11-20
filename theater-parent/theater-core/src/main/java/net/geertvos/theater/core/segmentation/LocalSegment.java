@@ -40,7 +40,9 @@ public class LocalSegment implements Segment {
 	}
 	
 	private void doHandleMessage(final ActorHandle from, final ActorHandle to, final Object message) {
-			
+			if(to == null) {
+				throw new IllegalArgumentException("No recipient specified.");
+			}
 			ThreadBoundRunnable<UUID> handleMessage = new ThreadBoundRunnable<UUID>() {
 
 				public void run() {
@@ -54,7 +56,9 @@ public class LocalSegment implements Segment {
 							actor.onActivate(to, actorState);
 							actor.onMessage(to, from, message, actorState);
 							actor.onDeactivate(to, actorState);
-							store.writeActorState(to, actorState);
+							if(actorState != null) {
+								store.writeActorState(to, actorState);
+							}
 						}
 					}
 				}

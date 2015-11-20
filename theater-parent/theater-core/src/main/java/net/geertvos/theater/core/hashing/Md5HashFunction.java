@@ -3,7 +3,7 @@ package net.geertvos.theater.core.hashing;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 
-import net.geertvos.theater.api.hashing.ConsistentHashFunction;
+import net.geertvos.theater.api.hashing.HashFunction;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -12,7 +12,7 @@ import org.apache.commons.pool.PoolableObjectFactory;
 import org.apache.commons.pool.impl.StackObjectPool;
 
 
-public class Md5HashFunction implements ConsistentHashFunction {
+public class Md5HashFunction implements HashFunction {
 
 	private StackObjectPool<MessageDigest> md5Pool;
 

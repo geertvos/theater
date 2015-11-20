@@ -12,6 +12,4 @@ public interface Actor {
 	
 	void onMessage(ActorHandle actor, ActorHandle from, Object message, Object actorState);
 	
-	String getType();
-	
 }

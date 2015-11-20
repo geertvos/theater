@@ -8,7 +8,7 @@ public abstract class AbstractActorAdapter implements Actor {
 
 	protected Theater theater;
 
-	protected AbstractActorAdapter(Theater theater) {
+	public void setTheater(Theater theater) {
 		this.theater = theater;
 	}
 	

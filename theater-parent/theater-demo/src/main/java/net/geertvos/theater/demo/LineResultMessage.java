@@ -1,17 +1,15 @@
 package net.geertvos.theater.demo;
 
-import java.util.UUID;
-
-public class LineResult {
+public class LineResultMessage {
 
 	private String id;
 	private int wordCount;
 
-	public LineResult() {
+	public LineResultMessage() {
 		
 	}
 	
-	public LineResult(String id, int wordCount) {
+	public LineResultMessage(String id, int wordCount) {
 		this.id = id;
 		this.wordCount = wordCount;
 	}

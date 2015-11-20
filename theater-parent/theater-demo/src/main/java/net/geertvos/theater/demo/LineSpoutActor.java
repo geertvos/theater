@@ -8,19 +8,11 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import net.geertvos.theater.api.actors.ActorHandle;
-import net.geertvos.theater.api.management.Theater;
-import net.geertvos.theater.api.messaging.MessageSender;
 import net.geertvos.theater.core.actor.AbstractActorAdapter;
-import net.geertvos.theater.core.actor.ActorHandleImpl;
-import net.geertvos.theater.core.actor.temp.TempActorHandle;
 
-public class LineSpout extends AbstractActorAdapter {
+public class LineSpoutActor extends AbstractActorAdapter {
 
-	protected LineSpout(Theater theater) {
-		super(theater);
-	}
-
-	private Logger LOG = Logger.getLogger(LineSpout.class);
+	private Logger LOG = Logger.getLogger(LineSpoutActor.class);
 	private static final int MSGS_COUNT = 10;
 	private static final int WORKER_COUNT = 100;
 
@@ -44,7 +36,7 @@ public class LineSpout extends AbstractActorAdapter {
 
 	public void onMessage(ActorHandle actor, ActorHandle from, Object message, Object actorState) {
 		LineSpoutState state = (LineSpoutState)actorState;
-		if(message instanceof LineResult) {
+		if(message instanceof LineResultMessage) {
 			state.setLineCount(state.getLineCount()+1);
 			if(state.getLineCount()==MSGS_COUNT) {
 				long time = System.currentTimeMillis() - start;
@@ -71,21 +63,17 @@ public class LineSpout extends AbstractActorAdapter {
 
 			for(int i=0;i<MSGS_COUNT;i++) {
 				UUID processor = processors.get(random.nextInt(WORKER_COUNT));
-				ActorHandle processorId = new ActorHandleImpl(actor.getCluster(), actor.getSystem(), "wordcountbolt", processor);
-				Line line = new Line(UUID.randomUUID().toString(),"The quick brown fox jumped over the lazy fence");
+				ActorHandle processorId = getTheater().getActor(WordCountBoltActor.class, processor);
+				LineMessage line = new LineMessage(UUID.randomUUID().toString(),"The quick brown fox jumped over the lazy fence");
 				LOG.debug("Sending a new line to "+processor);
 				getTheater().sendMessage(actor, processorId, line);
 			}
-			ActorHandle tempId = new TempActorHandle(actor.getCluster(),"temp","echo",UUID.randomUUID(),"Member-1");
-			getTheater().sendMessage(actor, tempId, "hoi");
-			ActorHandle tempId2 = new TempActorHandle(actor.getCluster(),"temp","echo",UUID.randomUUID(),"Member-2");
-			getTheater().sendMessage(actor, tempId2, "hoi 2");
+			ActorHandle echo1 = getTheater().getTempActor(EchoActor.class, UUID.randomUUID());
+			getTheater().sendMessage(actor, echo1, "hoi");
+			ActorHandle echo2 = getTheater().getTempActor(EchoActor.class, UUID.randomUUID());
+			getTheater().sendMessage(actor, echo2, "hoi 2");
 		}
 		
-	}
-
-	public String getType() {
-		return "linespout";
 	}
 
 }
