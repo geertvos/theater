@@ -17,6 +17,8 @@ import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.api.actorstore.ActorStateStore;
+import net.geertvos.theater.api.clustering.GroupMember;
+import net.geertvos.theater.api.clustering.GroupMembershipListener;
 import net.geertvos.theater.api.hashing.HashFunction;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.management.Theater;
@@ -29,7 +31,7 @@ import net.geertvos.theater.core.networking.SegmentClientFactory;
 import net.geertvos.theater.core.util.ThreadBoundExecutorService;
 import net.geertvos.theater.core.util.ThreadBoundRunnable;
 
-public class SegmentedActorSystem implements ActorSystem, SegmentManager, ClusterEventListener {
+public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupMembershipListener {
 
 	private Logger logger = Logger.getLogger(SegmentedActorSystem.class);
 	private final ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor = new ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID>(10);
@@ -44,7 +46,7 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 	private final ActorStateStore store;
 	private final SegmentClientFactory clientFactory;
 	private final Theater theater;
-	private HashFunction hashFunction =  new Md5HashFunction();
+	private final HashFunction hashFunction =  new Md5HashFunction();
 	
 	public SegmentedActorSystem(Theater theater, ActorStateStore store, int numberOfSegments, Cluster cluster, SegmentClientFactory clientFactory) {
 		this.theater = theater;
@@ -72,32 +74,32 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 	}
 	
 
-	public void onNewActiveMember(ClusterMember member, List<ClusterMember> members) {
+	public void onNewActiveMember(GroupMember member, List<GroupMember> members) {
 		Log.info("Cluster member "+member.getId()+" joined, redistributing segments.");
 		updateSegment(members);
 	}
 
-	public void onNewInactiveMember(ClusterMember member, List<ClusterMember> members) {
+	public void onNewInactiveMember(GroupMember member, List<GroupMember> members) {
 	}
 
-	public void onMemberActivated(ClusterMember member, List<ClusterMember> members) {
+	public void onMemberActivated(GroupMember member, List<GroupMember> members) {
 		Log.info("Cluster member "+member.getId()+" joined, redistributing segments.");
 		updateSegment(members);
 	}
 
-	public void onMemberDeactivated(ClusterMember member, List<ClusterMember> members) {
+	public void onMemberDeactivated(GroupMember member, List<GroupMember> members) {
 		Log.info("Cluster member "+member.getId()+" left, redistributing segments.");
 		updateSegment(members);
 	}
 
-	private void updateSegment(List<ClusterMember> members) {
+	private void updateSegment(List<GroupMember> members) {
 		try {
 			writeLock.lock();
 			ClusterMember me = cluster.getLocalMember();
 			int memberCount = members.size();
 			for(int i=0;i<numberOfSegments;i++) {
 				int memberNumber =  hash(i) % memberCount;
-				ClusterMember member = members.get(memberNumber);
+				GroupMember member = members.get(memberNumber);
 				if(member.getId().equals(me.getId())) {
 					createLocalSegment(i);
 				} else {
@@ -112,7 +114,7 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 		}
 	}
 	
-	public void onClusterStabilized(List<ClusterMember> members) {
+	public void onClusterStabilized(List<GroupMember> members) {
 		try {
 			readLock.lock();
 			for(Segment p : segments) {
@@ -129,7 +131,7 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 		
 	}
 	
-	private void createRemoteSegment(int i, ClusterMember member) {
+	private void createRemoteSegment(int i, GroupMember member) {
 		Segment current = segments.get(i);
 		if(current instanceof RemoteSegment && ((RemoteSegment)current).getClusterMember().getId().equals(member.getId())) {
 			logger.info("Segment "+i+" stays a remote segment on cluster member "+member.getId());
@@ -168,12 +170,8 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, Cluste
 	}
 
 
-	public void onClusterDestabilized(List<ClusterMember> members) {
+	public void onClusterDestabilized(List<GroupMember> members) {
 		
-	}
-
-	public void setHashFunction(HashFunction hashFunction) {
-		this.hashFunction = hashFunction;
 	}
 
 	public Actor getActor(ActorHandle actorHandle) {

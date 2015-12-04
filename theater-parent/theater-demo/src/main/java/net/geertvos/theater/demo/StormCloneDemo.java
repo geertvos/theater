@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.apache.log4j.BasicConfigurator;
 
 import net.geertvos.gossip.core.GossipCluster;
+import net.geertvos.gossip.core.GossipClusterBuilder;
 import net.geertvos.gossip.core.GossipClusterMember;
 import net.geertvos.gossip.core.network.GossipServer;
 import net.geertvos.theater.api.actors.ActorHandle;
@@ -36,14 +37,16 @@ public class StormCloneDemo {
 		//Gossip cluster setup
 		Map<String,String> meta = new HashMap<String,String>();
 		meta.put("segmentServer.port", "5000");
-		final GossipClusterMember member = new GossipClusterMember("Worker", "localhost", 8001, System.currentTimeMillis(),"");
-		final GossipCluster cluster = new GossipCluster(CLUSTER, "Master", "localhost", 8000, meta, member );
-		final GossipServer server = new GossipServer(cluster);
-		server.start();
 
+		GossipClusterBuilder clusterbuilder = new GossipClusterBuilder();
+		clusterbuilder.clusterName("Storm Clone") 
+					  .withMetadata(meta)
+					  .withSeedMember("Worker", 8001);
+		GossipCluster cluster = clusterbuilder.build();
+					  
+		
 		TheaterBuilder builder = new TheaterBuilder();
 		builder.divideInSegments(4)
-			   .useHost("localhost")
 			   .onPort(5000)
 			   .withClustering(cluster);
 		Theater theater = builder.build();

@@ -4,18 +4,19 @@ import org.apache.log4j.Logger;
 
 import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.ActorHandle;
+import net.geertvos.theater.api.clustering.GroupMember;
 import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.core.networking.SegmentClient;
 
 public class RemoteSegment implements Segment {
 
 	private Logger log = Logger.getLogger(RemoteSegment.class);
-	private final ClusterMember clusterMember;
+	private final GroupMember clusterMember;
 	private final int id;
 	private final SegmentClient client;
 	private volatile boolean operational = false;
 	
-	public RemoteSegment(int id, ClusterMember clusterMember, SegmentClient client) {
+	public RemoteSegment(int id, GroupMember clusterMember, SegmentClient client) {
 		this.id = id;
 		this.clusterMember = clusterMember;
 		this.client = client;
@@ -35,7 +36,7 @@ public class RemoteSegment implements Segment {
 		operational = false;
 	}
 	
-	public ClusterMember getClusterMember() {
+	public GroupMember getClusterMember() {
 		return clusterMember;
 	}
 

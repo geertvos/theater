@@ -3,6 +3,7 @@ package net.geertvos.theater.core.networking.netty;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.geertvos.gossip.api.cluster.ClusterMember;
+import net.geertvos.theater.api.clustering.GroupMember;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.core.networking.SegmentClientFactory;
 
@@ -10,7 +11,7 @@ public class PooledNettySegmentClientFactory implements SegmentClientFactory {
 
 	private final ConcurrentHashMap<String, NettySegmentClient> clients = new ConcurrentHashMap<String, NettySegmentClient>();
 
-	public SegmentClient createClient(int segment, ClusterMember member) {
+	public SegmentClient createClient(int segment, GroupMember member) {
 		int port = Integer.parseInt(member.getMetaData("segmentServer.port"));
 		return getClient(member.getHost(), port);
 	}
