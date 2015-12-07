@@ -14,7 +14,6 @@ import net.geertvos.theater.api.clustering.GroupMembershipListener;
 import net.geertvos.theater.api.clustering.GroupMembershipProvider;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.management.Theater;
-import net.geertvos.theater.core.actor.AbstractActorAdapter;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.core.networking.SegmentClientFactory;
 
@@ -59,7 +58,8 @@ public class TemporaryActorSystem implements ActorSystem, GroupMembershipListene
 
 	private void handleMessageInternally(ActorHandle from, ActorHandle to, Object message) {
 		try {
-			Actor actor = (Actor) Class.forName(to.getType()).newInstance();
+			@SuppressWarnings("unchecked")
+			Actor<Object> actor = (Actor<Object>) Class.forName(to.getType()).newInstance();
 			actor.setTheater(theater);
 			Object state = actor.onCreate(to);
 			actor.onActivate(to, state);

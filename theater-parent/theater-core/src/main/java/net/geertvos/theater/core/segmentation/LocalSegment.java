@@ -47,7 +47,7 @@ public class LocalSegment implements Segment {
 
 				public void run() {
 					if(operational) {
-						Actor actor = actorSystem.getActor(to);
+						Actor<Object> actor = actorSystem.getActor(to);
 						Object actorState = store.readActorState(to);
 						if(actorState == null) {
 							actorState = actor.onCreate(to);

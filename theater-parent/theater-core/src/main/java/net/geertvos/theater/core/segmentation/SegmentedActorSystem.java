@@ -170,9 +170,10 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupM
 		
 	}
 
-	public Actor getActor(ActorHandle actorHandle) {
+	public <A> Actor<A> getActor(ActorHandle actorHandle) {
 		try {
-			AbstractActorAdapter actor = (AbstractActorAdapter) Class.forName(actorHandle.getType()).newInstance();
+			@SuppressWarnings("unchecked")
+			AbstractActorAdapter<A> actor = (AbstractActorAdapter<A>) Class.forName(actorHandle.getType()).newInstance();
 			actor.setTheater(theater);
 			return actor;
 		} catch(ClassNotFoundException e) {
