@@ -8,13 +8,18 @@ import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.gossip.core.GossipCluster;
 import net.geertvos.theater.api.clustering.GroupMember;
 import net.geertvos.theater.api.clustering.GroupMembershipListener;
+import net.geertvos.theater.api.clustering.GroupMembershipProvider;
 
-public class GossipGroupMembershipProvider  {
+public class GossipGroupMembershipProvider implements GroupMembershipProvider  {
 
 	private GossipCluster cluster;
 	
 	public GossipGroupMembershipProvider(GossipCluster cluster) {
-		
+		this.cluster = cluster;
+	}
+	
+	public GroupMember getLocalMember() {
+		return wrap(cluster.getLocalMember());
 	}
 	
 	public void registerListener(GroupMembershipListener listener) {
@@ -87,4 +92,5 @@ public class GossipGroupMembershipProvider  {
 			return originalMember.getHost();
 		}
 	}
+
 }

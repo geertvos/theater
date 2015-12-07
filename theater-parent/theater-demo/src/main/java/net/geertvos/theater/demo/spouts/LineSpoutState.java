@@ -1,4 +1,4 @@
-package net.geertvos.theater.demo;
+package net.geertvos.theater.demo.spouts;
 
 
 public class LineSpoutState {

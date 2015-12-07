@@ -18,11 +18,6 @@
   		<artifactId>theater-kryo</artifactId>
   		<version>${project.version}</version>
   	</dependency>
-  	<dependency>
-  		<artifactId>gossip-api</artifactId>
-		<groupId>net.geertvos</groupId>
-		<version>0.0.1-SNAPSHOT</version>
-  	</dependency>
 	<dependency>
 		<groupId>log4j</groupId>
 		<artifactId>log4j</artifactId>

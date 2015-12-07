@@ -7,18 +7,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.log4j.Logger;
-
-import com.esotericsoftware.minlog.Log;
-
-import net.geertvos.gossip.api.cluster.Cluster;
-import net.geertvos.gossip.api.cluster.ClusterEventListener;
-import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.api.actorstore.ActorStateStore;
 import net.geertvos.theater.api.clustering.GroupMember;
 import net.geertvos.theater.api.clustering.GroupMembershipListener;
+import net.geertvos.theater.api.clustering.GroupMembershipProvider;
 import net.geertvos.theater.api.hashing.HashFunction;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.management.Theater;
@@ -31,16 +25,18 @@ import net.geertvos.theater.core.networking.SegmentClientFactory;
 import net.geertvos.theater.core.util.ThreadBoundExecutorService;
 import net.geertvos.theater.core.util.ThreadBoundRunnable;
 
+import org.apache.log4j.Logger;
+
+import com.esotericsoftware.minlog.Log;
+
 public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupMembershipListener {
 
-	private Logger logger = Logger.getLogger(SegmentedActorSystem.class);
+	private static final Logger LOG = Logger.getLogger(SegmentedActorSystem.class);
 	private final ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID> executor = new ThreadBoundExecutorService<ThreadBoundRunnable<UUID>, UUID>(10);
-
-	private final Cluster cluster;
+	private final GroupMembershipProvider cluster;
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	private final Lock readLock = lock.readLock();
 	private final Lock writeLock = lock.writeLock();
-	
 	private final int numberOfSegments;
 	private final List<Segment> segments;
 	private final ActorStateStore store;
@@ -48,12 +44,12 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupM
 	private final Theater theater;
 	private final HashFunction hashFunction =  new Md5HashFunction();
 	
-	public SegmentedActorSystem(Theater theater, ActorStateStore store, int numberOfSegments, Cluster cluster, SegmentClientFactory clientFactory) {
+	public SegmentedActorSystem(Theater theater, ActorStateStore store, int numberOfSegments, GroupMembershipProvider cluster, SegmentClientFactory clientFactory) {
 		this.theater = theater;
 		this.store = store;
 		this.numberOfSegments = numberOfSegments;
 		this.cluster = cluster;
-		this.cluster.getEventService().registerListener(this);
+		this.cluster.registerListener(this);
 		this.segments = new LinkedList<Segment>();
 		this.clientFactory = clientFactory;
 		for(int i=0;i<numberOfSegments;i++) {
@@ -95,7 +91,7 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupM
 	private void updateSegment(List<GroupMember> members) {
 		try {
 			writeLock.lock();
-			ClusterMember me = cluster.getLocalMember();
+			GroupMember me = cluster.getLocalMember();
 			int memberCount = members.size();
 			for(int i=0;i<numberOfSegments;i++) {
 				int memberNumber =  hash(i) % memberCount;
@@ -124,7 +120,7 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupM
 				}
 			}
 		} catch(Exception e) {
-			logger.error("Exception while initializing new segments.",e);
+			LOG.error("Exception while initializing new segments.",e);
 		} finally {
 			readLock.unlock();
 		}
@@ -134,12 +130,12 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupM
 	private void createRemoteSegment(int i, GroupMember member) {
 		Segment current = segments.get(i);
 		if(current instanceof RemoteSegment && ((RemoteSegment)current).getClusterMember().getId().equals(member.getId())) {
-			logger.info("Segment "+i+" stays a remote segment on cluster member "+member.getId());
+			LOG.info("Segment "+i+" stays a remote segment on cluster member "+member.getId());
 			return;
 		}
-		logger.info("Segment "+i+" relocates to remote cluster member "+member.getId());
+		LOG.info("Segment "+i+" relocates to remote cluster member "+member.getId());
 		current.onDestroy();
-		logger.debug("Segment "+i+" destroyed.");
+		LOG.debug("Segment "+i+" destroyed.");
 
 		SegmentClient client = clientFactory.createClient(i, member);
 		RemoteSegment newSegment = new RemoteSegment(i, member, client);
@@ -150,12 +146,12 @@ public class SegmentedActorSystem implements ActorSystem, SegmentManager, GroupM
 	private void createLocalSegment(int i) {
 		Segment current = segments.get(i);
 		if(current.isLocal()) {
-			logger.info("Segment "+i+" stays at local cluster member");
+			LOG.info("Segment "+i+" stays at local cluster member");
 			return;
 		}
-		logger.info("Segment "+i+" relocates to local cluster member");
+		LOG.info("Segment "+i+" relocates to local cluster member");
 		current.onDestroy();
-		logger.debug("Segment "+i+" destroyed.");
+		LOG.debug("Segment "+i+" destroyed.");
 		LocalSegment newSegment = new LocalSegment(i, this, store, executor);
 		segments.remove(i);
 		segments.add(i, newSegment);

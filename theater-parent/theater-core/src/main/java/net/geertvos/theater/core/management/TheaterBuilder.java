@@ -2,9 +2,9 @@ package net.geertvos.theater.core.management;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.geertvos.gossip.api.cluster.Cluster;
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.api.actorstore.ActorStateStore;
+import net.geertvos.theater.api.clustering.GroupMembershipProvider;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.management.Theater;
 import net.geertvos.theater.core.actor.temp.TemporaryActorSystem;
@@ -15,7 +15,7 @@ import net.geertvos.theater.core.segmentation.SegmentedActorSystem;
 
 public class TheaterBuilder {
 
-	private Cluster cluster;
+	private GroupMembershipProvider groupMembershipProvider;
 	private int segments = 4;
 	private int theaterServerPort = 5000;
 	private String theaterServerHost = "localhost";
@@ -35,13 +35,13 @@ public class TheaterBuilder {
 		return this;
 	}
 	
-	public TheaterBuilder withClustering(Cluster cluster) {
-		this.cluster = cluster;
+	public TheaterBuilder withGroupMemberShipProvider(GroupMembershipProvider provider) {
+		this.groupMembershipProvider = provider;
 		return this;
 	}
 	
 	public Theater build() {
-		TheaterImpl theater = new TheaterImpl(cluster);
+		TheaterImpl theater = new TheaterImpl(groupMembershipProvider);
 
 		//Actor Framework setup
 //		final CassandraActorDao actorDao = new CassandraActorDao(ksp, ACTOR_STORE_COLUMNFAMILIY);
@@ -60,8 +60,8 @@ public class TheaterBuilder {
 		};
 		
 		SegmentClientFactory clientFactory = new PooledNettySegmentClientFactory();
-		SegmentedActorSystem segmentedActorSystem = new SegmentedActorSystem(theater, store, segments, cluster, clientFactory);
-		ActorSystem temporarySystem = new TemporaryActorSystem(theater, cluster,clientFactory);
+		SegmentedActorSystem segmentedActorSystem = new SegmentedActorSystem(theater, store, segments, groupMembershipProvider, clientFactory);
+		ActorSystem temporarySystem = new TemporaryActorSystem(theater, groupMembershipProvider,clientFactory);
 		theater.registerActorSystem("segmented", segmentedActorSystem);
 		theater.registerActorSystem("temp", temporarySystem);
 		

@@ -1,16 +1,15 @@
 package net.geertvos.theater.core.segmentation;
 
-import org.apache.log4j.Logger;
-
-import net.geertvos.gossip.api.cluster.ClusterMember;
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.api.clustering.GroupMember;
 import net.geertvos.theater.api.segmentation.Segment;
 import net.geertvos.theater.core.networking.SegmentClient;
 
+import org.apache.log4j.Logger;
+
 public class RemoteSegment implements Segment {
 
-	private Logger log = Logger.getLogger(RemoteSegment.class);
+	private static final Logger LOG = Logger.getLogger(RemoteSegment.class);
 	private final GroupMember clusterMember;
 	private final int id;
 	private final SegmentClient client;
@@ -21,7 +20,6 @@ public class RemoteSegment implements Segment {
 		this.clusterMember = clusterMember;
 		this.client = client;
 	}
-
 
 	public int getId() {
 		return id;
@@ -49,7 +47,7 @@ public class RemoteSegment implements Segment {
 	}
 
 	public void handleMessage(ActorHandle from, ActorHandle to, Object message) {
-		log.info("RemoteSegment is handling message from "+from+" to "+to);
+		LOG.info("RemoteSegment is handling message from "+from+" to "+to);
 		client.sendMessage(from, to, message);
 	}
 

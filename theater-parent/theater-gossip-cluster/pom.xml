@@ -7,10 +7,8 @@
     <artifactId>theater-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>net.geertvos.theater</groupId>
-  <artifactId>theater-gossip-cluster</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <name>theater-gossip-cluster</name>
+  <artifactId>theater-gossip-groupmembership</artifactId>
+  <name>theater-gossip-groupmembership</name>
   <url>http://maven.apache.org</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

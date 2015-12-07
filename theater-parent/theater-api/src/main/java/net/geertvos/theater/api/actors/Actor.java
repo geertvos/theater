@@ -1,15 +1,15 @@
 package net.geertvos.theater.api.actors;
 
-public interface Actor {
+public interface Actor<S> {
 
-	Object onCreate(ActorHandle actor);
+	S onCreate(ActorHandle actor);
 	
-	void onActivate(ActorHandle actor, Object actorState);
+	void onActivate(ActorHandle actor, S actorState);
 	
-	void onDeactivate(ActorHandle actor, Object actorState);
+	void onDeactivate(ActorHandle actor, S actorState);
 	
-	void onDestroy(ActorHandle actor, Object actorState);
+	void onDestroy(ActorHandle actor, S actorState);
 	
-	void onMessage(ActorHandle actor, ActorHandle from, Object message, Object actorState);
+	void onMessage(ActorHandle actor, ActorHandle from, Object message, S actorState);
 	
 }
