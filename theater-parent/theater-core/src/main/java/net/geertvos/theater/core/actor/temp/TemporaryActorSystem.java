@@ -7,22 +7,22 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.log4j.Logger;
-
-import net.geertvos.gossip.api.cluster.Cluster;
-import net.geertvos.gossip.api.cluster.ClusterEventListener;
-import net.geertvos.gossip.api.cluster.ClusterMember;
+import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorHandle;
+import net.geertvos.theater.api.clustering.GroupMember;
+import net.geertvos.theater.api.clustering.GroupMembershipListener;
+import net.geertvos.theater.api.clustering.GroupMembershipProvider;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.management.Theater;
-import net.geertvos.theater.core.actor.AbstractActorAdapter;
 import net.geertvos.theater.core.networking.SegmentClient;
 import net.geertvos.theater.core.networking.SegmentClientFactory;
 
-public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
+import org.apache.log4j.Logger;
+
+public class TemporaryActorSystem implements ActorSystem, GroupMembershipListener {
 
 	private static final Logger LOG = Logger.getLogger(TemporaryActorSystem.class);
-	private List<ClusterMember> clusterMembers = null;
+	private List<GroupMember> clusterMembers = null;
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	private final Lock readLock = lock.readLock();
 	private final Lock writeLock = lock.writeLock();
@@ -31,11 +31,11 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 	private final Map<String,SegmentClient> clients = new ConcurrentHashMap<String, SegmentClient>();
 	private final Theater theater;
 	
-	public TemporaryActorSystem(Theater theater, Cluster cluster, SegmentClientFactory clientFactory) {
+	public TemporaryActorSystem(Theater theater, GroupMembershipProvider cluster, SegmentClientFactory clientFactory) {
 		this.theater = theater;
 		this.clientFactory = clientFactory;
 		this.clusterId = cluster.getLocalMember().getId();
-		cluster.getEventService().registerListener(this);
+		cluster.registerListener(this);
 	}
 	
 	public void handleMessage(ActorHandle from, ActorHandle to, Object message) {
@@ -58,7 +58,8 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 
 	private void handleMessageInternally(ActorHandle from, ActorHandle to, Object message) {
 		try {
-			AbstractActorAdapter actor = (AbstractActorAdapter) Class.forName(to.getType()).newInstance();
+			@SuppressWarnings("unchecked")
+			Actor<Object> actor = (Actor<Object>) Class.forName(to.getType()).newInstance();
 			actor.setTheater(theater);
 			Object state = actor.onCreate(to);
 			actor.onActivate(to, state);
@@ -72,7 +73,7 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 
 	private void sendMessageToOtherMember(ActorHandle from, ActorHandle to, Object message) {
 		TempActorHandle tempID = (TempActorHandle) to;
-		for(ClusterMember member : clusterMembers) {
+		for(GroupMember member : clusterMembers) {
 			if(member.getId().equals(tempID.getMemberId())) {
 				SegmentClient client = clients.get(member.getId());
 				client.sendMessage(from, to, message);
@@ -80,7 +81,7 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 		}
 	}
 
-	public void onClusterStabilized(List<ClusterMember> members) {
+	public void onClusterStabilized(List<GroupMember> members) {
 		try {
 			writeLock.lock();
 			this.clusterMembers = members;
@@ -89,21 +90,21 @@ public class TemporaryActorSystem implements ActorSystem, ClusterEventListener {
 		}
 	}
 
-	public void onNewActiveMember(ClusterMember member,	List<ClusterMember> members) {
+	public void onNewActiveMember(GroupMember member,	List<GroupMember> members) {
 	}
 	
-	public void onNewInactiveMember(ClusterMember member,List<ClusterMember> members) {}
+	public void onNewInactiveMember(GroupMember member,List<GroupMember> members) {}
 	
-	public void onMemberActivated(ClusterMember member,	List<ClusterMember> members) {
+	public void onMemberActivated(GroupMember member,	List<GroupMember> members) {
 		SegmentClient client = clientFactory.createClient(member);
 		client.start();
 		clients.put(member.getId(), client);
 	}
 
 	
-	public void onClusterDestabilized(List<ClusterMember> members) {}
+	public void onClusterDestabilized(List<GroupMember> members) {}
 
-	public void onMemberDeactivated(ClusterMember member, List<ClusterMember> members) {
+	public void onMemberDeactivated(GroupMember member, List<GroupMember> members) {
 		SegmentClient client = clients.remove(member.getId());
 		if(client != null) {
 			client.stop();

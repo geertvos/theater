@@ -1,4 +1,4 @@
-package net.geertvos.theater.demo;
+package net.geertvos.theater.demo.spouts;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,17 +9,21 @@ import org.apache.log4j.Logger;
 
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.core.actor.AbstractActorAdapter;
+import net.geertvos.theater.demo.EchoActor;
+import net.geertvos.theater.demo.bolts.WordCountBoltActor;
+import net.geertvos.theater.demo.messages.LineMessage;
+import net.geertvos.theater.demo.messages.LineResultMessage;
 
-public class LineSpoutActor extends AbstractActorAdapter {
+public class LineSpoutActor extends AbstractActorAdapter<LineSpoutState> {
 
 	private Logger LOG = Logger.getLogger(LineSpoutActor.class);
-	private static final int MSGS_COUNT = 10;
+	private static final int MSGS_COUNT = 1000;
 	private static final int WORKER_COUNT = 100;
 
 	private long start;
 	private Random random = new Random(System.currentTimeMillis());
 	
-	public Object onCreate(ActorHandle actor) {
+	public LineSpoutState onCreate(ActorHandle actor) {
 		start = System.currentTimeMillis();
 		Firehose hose = new Firehose(actor);
 		Thread t = new Thread(hose,"Firehose thread");
@@ -28,14 +32,13 @@ public class LineSpoutActor extends AbstractActorAdapter {
 	}
 
 	
-	public void onActivate(ActorHandle actor, Object actorState) {
+	public void onActivate(ActorHandle actor, LineSpoutState state) {
 	}
 
-	public void onDeactivate(ActorHandle actor, Object actorState) {
+	public void onDeactivate(ActorHandle actor, LineSpoutState state) {
 	}
 
-	public void onMessage(ActorHandle actor, ActorHandle from, Object message, Object actorState) {
-		LineSpoutState state = (LineSpoutState)actorState;
+	public void onMessage(ActorHandle actor, ActorHandle from, Object message, LineSpoutState state) {
 		if(message instanceof LineResultMessage) {
 			state.setLineCount(state.getLineCount()+1);
 			if(state.getLineCount()==MSGS_COUNT) {

@@ -1,4 +1,4 @@
-package net.geertvos.theater.demo;
+package net.geertvos.theater.demo.messages;
 
 public class LineMessage {
 

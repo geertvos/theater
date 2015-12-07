@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import net.geertvos.gossip.api.cluster.Cluster;
 import net.geertvos.theater.api.actors.ActorHandle;
+import net.geertvos.theater.api.clustering.GroupMembershipProvider;
 import net.geertvos.theater.api.management.ActorSystem;
 import net.geertvos.theater.api.management.Theater;
 import net.geertvos.theater.core.actor.ActorHandleImpl;
@@ -14,9 +14,9 @@ import net.geertvos.theater.core.actor.temp.TempActorHandle;
 public class TheaterImpl implements Theater {
 
 	private final Map<String, ActorSystem> systems = new HashMap<String, ActorSystem>();
-	private Cluster cluster;
+	private GroupMembershipProvider cluster;
 
-	public TheaterImpl(Cluster cluster) {
+	public TheaterImpl(GroupMembershipProvider cluster) {
 		this.cluster = cluster;
 	}
 	
@@ -31,16 +31,21 @@ public class TheaterImpl implements Theater {
 	public void sendMessage(ActorHandle from, ActorHandle to, Object message) {
 		getActorSystem(to.getSystem()).handleMessage(from, to, message);
 	}
-	
-	public ActorHandle getTempActor(Class type, UUID id) {
-		return new TempActorHandle("Not in use yet", "temp", type.getName(), id, cluster.getLocalMember().getId());
+
+	public void sendMessage(ActorHandle to, Object message) {
+		getActorSystem(to.getSystem()).handleMessage(null, to, message);
 	}
 	
-	public ActorHandle getActor(Class type, UUID id) {
-		return new ActorHandleImpl("cluster not in use", "segmented", type.getName(), id);
+	public ActorHandle getTempActor(Class<?> type, UUID id) {
+		return new TempActorHandle("Not in use yet.", "temp", type.getName(), id, cluster.getLocalMember().getId());
 	}
 	
-	public ActorHandle getServiceActor(Class type, String service) {
+	public ActorHandle getActor(Class<?> type, UUID id) {
+		return new ActorHandleImpl("cluster not in use yet.", "segmented", type.getName(), id);
+	}
+	
+	public ActorHandle getServiceActor(Class<?> type, String service) {
 		throw new UnsupportedOperationException();
 	}
+
 }
