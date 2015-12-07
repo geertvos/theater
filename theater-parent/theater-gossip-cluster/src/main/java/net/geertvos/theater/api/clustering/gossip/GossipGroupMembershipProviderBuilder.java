@@ -21,6 +21,11 @@ public class GossipGroupMembershipProviderBuilder {
 		return this;
 	}
 	
+	public GossipGroupMembershipProviderBuilder withMetadata(String key, String value) {
+		clusterBuilder.withMetadata(key, value);
+		return this;
+	}
+	
 	public GossipGroupMembershipProviderBuilder withSeedMember(String name, String host, int port) {
 		clusterBuilder.withSeedMember(name, host, port);
 		return this;

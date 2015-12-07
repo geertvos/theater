@@ -7,6 +7,8 @@ import net.geertvos.theater.api.actors.ActorHandle;
 public interface Theater {
 
 	public void sendMessage(ActorHandle from, ActorHandle to, Object message);
+
+	public void sendMessage(ActorHandle to, Object message);
 	
 	public ActorHandle getTempActor(Class<?> type, UUID id);
 	

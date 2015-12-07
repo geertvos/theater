@@ -17,7 +17,7 @@ import net.geertvos.theater.demo.messages.LineResultMessage;
 public class LineSpoutActor extends AbstractActorAdapter<LineSpoutState> {
 
 	private Logger LOG = Logger.getLogger(LineSpoutActor.class);
-	private static final int MSGS_COUNT = 10;
+	private static final int MSGS_COUNT = 1000;
 	private static final int WORKER_COUNT = 100;
 
 	private long start;

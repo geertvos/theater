@@ -7,6 +7,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import net.geertvos.theater.api.actors.Actor;
 import net.geertvos.theater.api.actors.ActorHandle;
 import net.geertvos.theater.api.clustering.GroupMember;
 import net.geertvos.theater.api.clustering.GroupMembershipListener;
@@ -58,7 +59,7 @@ public class TemporaryActorSystem implements ActorSystem, GroupMembershipListene
 
 	private void handleMessageInternally(ActorHandle from, ActorHandle to, Object message) {
 		try {
-			AbstractActorAdapter actor = (AbstractActorAdapter) Class.forName(to.getType()).newInstance();
+			Actor actor = (Actor) Class.forName(to.getType()).newInstance();
 			actor.setTheater(theater);
 			Object state = actor.onCreate(to);
 			actor.onActivate(to, state);
